@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Perturbation Atlas — gene, pathway and disease records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8ECEB; --surface:#FFFFFF; --surface-2:#F2F5F4; --ink:#141F1D; --muted:#5A6A67;
+  --rule:#C6D0CE; --rule-soft:#DCE3E1;
+  --down:#0C6467; --down-bg:#DDEEEE; --up:#9A6100; --up-bg:#F6EBD6;
+  --warn:#9B2E3E; --warn-bg:#F6E2E4; --neutral:#3F5F7A; --neutral-bg:#E2EAF1;
+  --shadow:0 1px 0 var(--rule-soft);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1413; --surface:#14201E; --surface-2:#1A2725; --ink:#DEE7E4; --muted:#93A6A2;
+    --rule:#2A3A37; --rule-soft:#22302D;
+    --down:#52C6BD; --down-bg:#12302F; --up:#DDA349; --up-bg:#32270F;
+    --warn:#E0808C; --warn-bg:#331A1E; --neutral:#8FB6D4; --neutral-bg:#16242F;
+    --shadow:0 1px 0 var(--rule-soft);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1413; --surface:#14201E; --surface-2:#1A2725; --ink:#DEE7E4; --muted:#93A6A2;
+  --rule:#2A3A37; --rule-soft:#22302D;
+  --down:#52C6BD; --down-bg:#12302F; --up:#DDA349; --up-bg:#32270F;
+  --warn:#E0808C; --warn-bg:#331A1E; --neutral:#8FB6D4; --neutral-bg:#16242F;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 12px); -webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.55; letter-spacing:-0.005em;
+}
+code,.mono,.acc{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:inherit}
+h1,h2,h3,h4{line-height:1.2; margin:0; font-weight:600; letter-spacing:-0.02em}
+p{margin:0 0 .7em}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--down); outline-offset:2px; border-radius:2px}
+
+/* ---- masthead ---- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{border-bottom:1px solid var(--rule); background:var(--surface)}
+.masthead{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;padding:26px 0 18px;flex-wrap:wrap}
+.brand h1{font-size:26px;font-weight:700}
+.brand p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:62ch}
+.counts{display:flex;gap:22px;align-items:flex-end}
+.count b{display:block;font-size:24px;font-weight:600;font-family:"IBM Plex Mono",monospace;line-height:1}
+.count span{font-size:12.5px;color:var(--muted)}
+.themebtn{background:none;border:1px solid var(--rule);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted);cursor:pointer}
+
+/* ---- tabs ---- */
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--rule);background:var(--surface);position:sticky;top:env(safe-area-inset-top,0px);z-index:20;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs .inner{display:flex;gap:4px;max-width:1180px;margin:0 auto;padding:0 20px;width:100%}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;color:var(--muted);font-size:14.5px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--down);font-weight:600}
+main{padding:26px 0 80px}
+.panel[hidden]{display:none}
+
+/* ---- console ---- */
+.console{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 20px}
+.console h2{font-size:18px;margin-bottom:4px}
+.console .lede{color:var(--muted);font-size:14.5px;margin-bottom:16px;max-width:70ch}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+.field select,.field input{width:100%;padding:9px 10px;background:var(--surface-2);border:1px solid var(--rule);border-radius:6px}
+.actions{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+.btn{background:var(--ink);color:var(--surface);border:0;border-radius:6px;padding:9px 16px;cursor:pointer;font-weight:500}
+.btn.ghost{background:none;color:var(--muted);border:1px solid var(--rule)}
+.hint{color:var(--muted);font-size:13px}
+
+/* ---- results ---- */
+.answer{margin-top:22px}
+.answer-head{border-left:3px solid var(--down);padding:2px 0 2px 14px;margin-bottom:18px}
+.answer-head h3{font-size:17px}
+.answer-head p{margin:5px 0 0;color:var(--muted);font-size:14.5px;max-width:74ch}
+.rec{background:var(--surface);border:1px solid var(--rule);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.rec-top{display:flex;gap:14px;padding:14px 16px;align-items:flex-start;flex-wrap:wrap}
+.rank{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);padding-top:3px;min-width:22px}
+.rec-id{flex:1;min-width:220px}
+.rec-id h4{font-size:17px;display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.rec-id .sym{font-family:"IBM Plex Mono",monospace;font-weight:600}
+.rec-id .full{font-weight:400;color:var(--muted);font-size:13.5px}
+.acc{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.chip.down{background:var(--down-bg);color:var(--down);border-color:var(--down)}
+.chip.up{background:var(--up-bg);color:var(--up);border-color:var(--up)}
+.chip.neutral{background:var(--neutral-bg);color:var(--neutral);border-color:var(--neutral)}
+.chip.plain{background:var(--surface-2);color:var(--muted);border-color:var(--rule)}
+.tier{display:flex;gap:2px;align-items:center}
+.tier i{width:14px;height:5px;border-radius:1px;background:var(--rule);display:block}
+.tier i.on{background:var(--down)}
+.tier span{font-size:11.5px;color:var(--muted);margin-left:5px}
+.rec-body{padding:0 16px 16px;border-top:1px solid var(--rule-soft)}
+.kv{display:grid;grid-template-columns:132px 1fr;gap:4px 16px;margin-top:13px;font-size:14.5px}
+.kv dt{color:var(--muted);font-size:13px;padding-top:2px}
+.kv dd{margin:0}
+.kv dd.warn{color:var(--warn)}
+details.more{margin-top:14px;border-top:1px dashed var(--rule);padding-top:11px}
+details.more summary{cursor:pointer;font-size:13.5px;color:var(--muted);list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"+ ";font-family:"IBM Plex Mono",monospace}
+details.more[open] summary::before{content:"− "}
+.ev{margin:11px 0 0;padding-left:18px;font-size:14px}
+.ev li{margin-bottom:4px}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.links a{font-size:12px;text-decoration:none;padding:4px 9px;border:1px solid var(--rule);border-radius:5px;color:var(--muted);background:var(--surface-2)}
+.links a:hover{color:var(--ink);border-color:var(--ink)}
+.empty{background:var(--surface);border:1px dashed var(--rule);border-radius:10px;padding:26px;color:var(--muted);text-align:center}
+
+/* ---- disease report ---- */
+.pathblock{background:var(--surface);border:1px solid var(--rule);border-radius:10px;margin-bottom:14px}
+.pathblock > h4{padding:13px 16px;font-size:15.5px;border-bottom:1px solid var(--rule-soft);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.pathblock > h4 .pid{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);font-weight:400}
+.generow{display:grid;grid-template-columns:130px 1fr;gap:14px;padding:13px 16px;border-bottom:1px solid var(--rule-soft);font-size:14.5px}
+.generow:last-child{border-bottom:0}
+.generow .g{font-family:"IBM Plex Mono",monospace;font-weight:600}
+.generow .g small{display:block;font-family:"IBM Plex Sans",sans-serif;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px}
+@media(max-width:620px){.generow{grid-template-columns:1fr;gap:6px}.kv{grid-template-columns:1fr;gap:1px 0}.kv dt{padding-top:9px}}
+
+/* ---- table ---- */
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:840px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+th{position:sticky;top:0;background:var(--surface-2);font-size:12.5px;color:var(--muted);font-weight:500;cursor:pointer;white-space:nowrap}
+tbody tr:hover{background:var(--surface-2)}
+td.sym{font-family:"IBM Plex Mono",monospace;font-weight:600;white-space:nowrap}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+.filters .field{min-width:150px}
+
+/* ---- charts / map ---- */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px}
+.card h4{font-size:14.5px;margin-bottom:3px}
+.card p.sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+svg{display:block;max-width:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+#mapbox{background:var(--surface);border:1px solid var(--rule);border-radius:10px;overflow:hidden;position:relative}
+#mapsvg{width:100%;height:560px;touch-action:none;cursor:grab}
+.maptip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;padding:5px 9px;border-radius:5px;opacity:0;transition:opacity .12s;max-width:260px}
+
+/* ---- prose ---- */
+.prose{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:22px 24px;max-width:78ch}
+.prose h3{font-size:16px;margin:22px 0 8px}
+.prose h3:first-child{margin-top:0}
+.prose p,.prose li{font-size:14.8px;color:var(--ink)}
+.prose ul{padding-left:20px;margin:0 0 12px}
+.prose li{margin-bottom:5px}
+.prose .note{background:var(--warn-bg);border-left:3px solid var(--warn);padding:12px 14px;border-radius:0 6px 6px 0;margin:14px 0}
+.prose .note p:last-child{margin-bottom:0}
+.schema{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;padding:14px;overflow-x:auto;white-space:pre}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap masthead">
+    <div class="brand">
+      <h1>Perturbation Atlas</h1>
+      <p>A curated gene–pathway–disease table built to answer two questions: which gene to perturb to block a pathway in a given disease, and what a disease's pathways and genes actually do. Every record carries a direction of perturbation, an expected result, the caveats, and links out to the primary sources.</p>
+    </div>
+    <div class="counts">
+      <div class="count"><b id="cRec">0</b><span>records</span></div>
+      <div class="count"><b id="cGene">0</b><span>genes</span></div>
+      <div class="count"><b id="cPath">0</b><span>pathways</span></div>
+      <div class="count"><b id="cDis">0</b><span>diseases</span></div>
+      <button class="themebtn" id="themebtn">Switch theme</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="inner" role="tablist">
+  <button class="tab" role="tab" data-p="qa" aria-selected="true">Block a pathway</button>
+  <button class="tab" role="tab" data-p="qb" aria-selected="false">Disease report</button>
+  <button class="tab" role="tab" data-p="browse" aria-selected="false">Browse and export</button>
+  <button class="tab" role="tab" data-p="map" aria-selected="false">Map</button>
+  <button class="tab" role="tab" data-p="over" aria-selected="false">Overview</button>
+  <button class="tab" role="tab" data-p="src" aria-selected="false">Sources and schema</button>
+</div></nav>
+
+<main class="wrap">
+
+  <section class="panel" id="p-qa">
+    <div class="console">
+      <h2>Which gene should I perturb?</h2>
+      <p class="lede">Pick a pathway and a disease context. The answer ranks candidate genes by how well validated the perturbation is, tells you which direction to move the gene, and says what to expect — including the ways the experiment usually goes wrong.</p>
+      <div class="fields">
+        <div class="field"><label for="qaPath">Pathway</label><select id="qaPath"></select></div>
+        <div class="field"><label for="qaDis">Disease context</label><select id="qaDis"></select></div>
+        <div class="field"><label for="qaGoal">Goal</label><select id="qaGoal">
+          <option value="block">Block the pathway</option>
+          <option value="restore">Restore or activate the pathway</option>
+          <option value="any">Either direction</option>
+        </select></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="qaRun">Show candidates</button>
+        <span class="hint" id="qaHint"></span>
+      </div>
+    </div>
+    <div class="answer" id="qaOut"></div>
+  </section>
+
+  <section class="panel" id="p-qb" hidden>
+    <div class="console">
+      <h2>What drives this disease?</h2>
+      <p class="lede">Pick a disease to get its pathways, the genes acting in each, the role each gene plays, and how each has been perturbed.</p>
+      <div class="fields">
+        <div class="field"><label for="qbDis">Disease</label><select id="qbDis"></select></div>
+        <div class="field"><label for="qbArea">Or browse by area</label><select id="qbArea"></select></div>
+      </div>
+      <div class="actions"><button class="btn" id="qbRun">Build report</button><span class="hint" id="qbHint"></span></div>
+    </div>
+    <div class="answer" id="qbOut"></div>
+  </section>
+
+  <section class="panel" id="p-browse" hidden>
+    <div class="filters">
+      <div class="field"><label for="fText">Search</label><input id="fText" type="search" placeholder="gene, pathway, disease, drug"></div>
+      <div class="field"><label for="fArea">Area</label><select id="fArea"></select></div>
+      <div class="field"><label for="fDir">Direction</label><select id="fDir"></select></div>
+      <div class="field"><label for="fTier">Minimum evidence</label><select id="fTier">
+        <option value="4">Any tier</option><option value="3">Tier 3 or better</option>
+        <option value="2">Tier 2 or better</option><option value="1">Tier 1 only</option></select></div>
+      <div class="field" style="min-width:auto"><label>&nbsp;</label>
+        <button class="btn ghost" id="expCsv">Download CSV</button></div>
+      <div class="field" style="min-width:auto"><label>&nbsp;</label>
+        <button class="btn ghost" id="expJson">Download JSON</button></div>
+    </div>
+    <p class="hint" id="browseCount" style="margin:0 0 10px"></p>
+    <div class="tablewrap"><table id="tbl">
+      <thead><tr>
+        <th data-k="s">Gene</th><th data-k="e">Gene ID</th><th data-k="p">Pathway</th>
+        <th data-k="d">Disease</th><th data-k="dir">Perturb</th><th data-k="t">Tier</th>
+        <th data-k="r">Role</th>
+      </tr></thead><tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="p-map" hidden>
+    <div class="card" style="margin-bottom:14px">
+      <h4>Gene, pathway and disease as one network</h4>
+      <p class="sub">Filter to an area to keep the picture legible. Drag a node to pull the layout apart; hover for the record.</p>
+      <div class="fields" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="field"><label for="mapArea">Area</label><select id="mapArea"></select></div>
+        <div class="field"><label for="mapMode">Show</label><select id="mapMode">
+          <option value="all">Genes, pathways and diseases</option>
+          <option value="gp">Genes and pathways</option>
+          <option value="gd">Genes and diseases</option>
+        </select></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--down)"></i>Gene</span>
+        <span><i style="background:var(--up)"></i>Pathway</span>
+        <span><i style="background:var(--neutral)"></i>Disease</span>
+      </div>
+    </div>
+    <div id="mapbox"><svg id="mapsvg"></svg><div class="maptip" id="maptip"></div></div>
+  </section>
+
+  <section class="panel" id="p-over" hidden>
+    <div class="grid2" id="charts"></div>
+  </section>
+
+  <section class="panel" id="p-src" hidden>
+    <div class="prose" id="srcProse"></div>
+  </section>
+
+</main>
+<script>
+/* ============================================================
+   GPD-DB  ·  Gene / Pathway / Disease perturbation records
+   Schema documented in the Sources tab.
+   s=symbol n=name e=EntrezID g=EnsemblID
+   p=pathway pid=pathway accession pdb=pathway source
+   d=disease a=therapeutic area r=role in disease
+   dir=perturbation direction  mod=modalities
+   pos=position in pathway  eff=effect on pathway flux
+   res=expected experimental/clinical result  cav=caveats
+   t=evidence tier (1 strongest)  cl=clinical status  ev=evidence lines
+   ============================================================ */
+const DB = [
+/* ---------- ONCOLOGY · RAS–MAPK ---------- */
+{s:"KRAS",n:"KRAS proto-oncogene, GTPase",e:3845,g:"ENSG00000133703",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Pancreatic ductal adenocarcinoma",a:"Oncology",r:"Driver oncogene (gain-of-function, ~90% KRAS-mutant)",
+ dir:"knockdown",mod:["siRNA","shRNA","CRISPRi","CRISPR-KO","small-molecule (G12C/G12D)","degrader"],
+ pos:"Proximal node — membrane GTPase immediately downstream of RTKs",
+ eff:"Blocks flux into both RAF–MEK–ERK and PI3K arms",
+ res:"Loss of pERK and pS6; G1 arrest within 24–48 h; apoptosis in KRAS-dependent lines; tumour regression in KRAS-mutant xenografts. In vivo, stroma remodelling and loss of macropinocytosis.",
+ cav:"Adaptive reactivation through RTK/SHP2 feedback within days; wild-type RAS isoforms (NRAS/HRAS) can compensate. Allele-specific inhibitors only cover a subset of codon-12 variants.",
+ t:1,cl:"Approved: sotorasib, adagrasib (G12C, NSCLC/CRC); G12D and pan-RAS agents in trials",
+ ev:["Sanger/Broad DepMap: KRAS is a selective essential gene in KRAS-mutant lines","CodeBreaK and KRYSTAL clinical programmes","COSMIC/cBioPortal mutation frequency ~90% in PDAC"]},
+
+{s:"KRAS",n:"KRAS proto-oncogene, GTPase",e:3845,g:"ENSG00000133703",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Non-small cell lung cancer",a:"Oncology",r:"Driver oncogene (~25–30% of lung adenocarcinoma; G12C enriched in smokers)",
+ dir:"knockdown",mod:["small-molecule covalent inhibitor","siRNA","CRISPR-KO"],
+ pos:"Proximal node downstream of EGFR",
+ eff:"Blocks MAPK output",
+ res:"Objective response in ~35–40% of G12C NSCLC; durable responses limited by acquired secondary RAS mutations and RTK bypass.",
+ cav:"Resistance via Y96D, new KRAS alleles, MET amplification, EMT.",
+ t:1,cl:"Approved (sotorasib, adagrasib)",
+ ev:["CodeBreaK 100/200","KRYSTAL-1","TCGA LUAD mutation landscape"]},
+
+{s:"BRAF",n:"B-Raf proto-oncogene, serine/threonine kinase",e:673,g:"ENSG00000157764",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Melanoma",a:"Oncology",r:"Driver oncogene; V600E constitutively activates MEK–ERK",
+ dir:"knockdown",mod:["small-molecule (vemurafenib/dabrafenib/encorafenib)","shRNA","CRISPR-KO"],
+ pos:"MAP3K tier",eff:"Blocks ERK phosphorylation at the RAF node",
+ res:"Rapid pERK loss, tumour shrinkage in ~50–60% of V600E melanoma; response deepened and prolonged by combined MEK inhibition.",
+ cav:"Paradoxical MAPK activation in BRAF-wild-type/RAS-mutant cells — do not use RAF inhibitors as a generic pathway block. Resistance within 6–9 months via NRAS mutation, BRAF splice variants, MAP2K1 mutation.",
+ t:1,cl:"Approved: BRAF+MEK inhibitor combinations",
+ ev:["BRIM-3, COMBI-d/v, coBRIM trials","Paradoxical activation described across multiple independent 2010 Nature reports"]},
+
+{s:"MAP2K1",n:"Mitogen-activated protein kinase kinase 1 (MEK1)",e:5604,g:"ENSG00000169032",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Melanoma",a:"Oncology",r:"Obligate transducer; mutations drive resistance to RAF inhibitors",
+ dir:"knockdown",mod:["allosteric inhibitor (trametinib, cobimetinib)","siRNA","CRISPR-KO"],
+ pos:"MAP2K tier — the narrowest point of the cascade",
+ eff:"Most complete single-node block of ERK output",
+ res:"Near-complete pERK suppression; cytostasis in MAPK-addicted lines. Combination with RAF inhibitor raises response rate and delays resistance.",
+ cav:"Narrow therapeutic window in vivo (rash, retinopathy, reduced ejection fraction) because MEK is required in normal tissue; feedback loss of ERK-dependent inhibition of RAF can blunt effect.",
+ t:1,cl:"Approved in combination",ev:["COMBI-d/v","DepMap MAPK-pathway dependency clusters"]},
+
+{s:"NRAS",n:"NRAS proto-oncogene, GTPase",e:4893,g:"ENSG00000213281",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Melanoma",a:"Oncology",r:"Driver oncogene in ~15–20% of cutaneous melanoma; mutually exclusive with BRAF V600",
+ dir:"knockdown",mod:["siRNA","CRISPR-KO","MEK inhibitor as downstream surrogate"],
+ pos:"Proximal GTPase",eff:"Blocks MAPK and partially PI3K",
+ res:"Growth arrest in NRAS-mutant lines; no direct clinical-grade NRAS inhibitor, so downstream MEK/ERK blockade is the practical route.",
+ cav:"MEK inhibitor monotherapy gives only modest clinical benefit in NRAS-mutant melanoma.",
+ t:3,cl:"No direct inhibitor approved; NEMO trial of binimetinib showed limited PFS gain",
+ ev:["TCGA SKCM","DepMap NRAS dependency in NRAS-mutant lines"]},
+
+{s:"PTPN11",n:"Protein tyrosine phosphatase non-receptor type 11 (SHP2)",e:5781,g:"ENSG00000179295",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"KRAS-mutant solid tumours",a:"Oncology",r:"Upstream adaptor phosphatase that reloads RAS with GTP; mediates adaptive resistance",
+ dir:"knockdown",mod:["allosteric inhibitor","siRNA","CRISPR-KO"],
+ pos:"Upstream of RAS, downstream of RTKs",
+ eff:"Cuts the RTK feedback loop that reactivates RAS during RAS or MEK blockade",
+ res:"Alone: modest. Combined with KRAS G12C or MEK inhibitor: deeper and more durable pERK suppression and tumour regression in vivo — a standard vertical-combination experiment.",
+ cav:"Germline PTPN11 gain-of-function causes Noonan syndrome; on-target toxicity considerations. Not effective where RAS is GTP-loading-independent (e.g. some G12V contexts).",
+ t:2,cl:"Multiple SHP2 inhibitors in phase 1/2 combinations",
+ ev:["Genome-wide CRISPR screens identify PTPN11 as a resistance modifier to MEK inhibition"]},
+
+{s:"SOS1",n:"SOS Ras/Rac guanine nucleotide exchange factor 1",e:6654,g:"ENSG00000115904",
+ p:"RAS–MAPK / ERK signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"KRAS-mutant solid tumours",a:"Oncology",r:"Guanine nucleotide exchange factor that loads RAS with GTP",
+ dir:"knockdown",mod:["small-molecule SOS1:KRAS disruptor","siRNA","CRISPR-KO"],
+ pos:"Immediately upstream of RAS",eff:"Reduces the GTP-loaded RAS pool",
+ res:"Suppresses nucleotide cycling; synergises with KRAS G12C and MEK inhibitors; single-agent effect modest.",
+ cav:"Redundancy with SOS2 — dual loss needed in some models.",
+ t:2,cl:"Phase 1/2",ev:["SOS1 inhibitor preclinical combination studies"]},
+
+/* ---------- ONCOLOGY · RTK ---------- */
+{s:"EGFR",n:"Epidermal growth factor receptor",e:1956,g:"ENSG00000146648",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Non-small cell lung cancer",a:"Oncology",r:"Driver oncogene; exon-19 deletion and L858R cause ligand-independent activation",
+ dir:"knockdown",mod:["TKI (osimertinib)","monoclonal antibody","siRNA","CRISPR-KO","degrader"],
+ pos:"Receptor — top of the cascade",eff:"Blocks pathway entry upstream of RAS and PI3K",
+ res:"~80% objective response in EGFR-mutant NSCLC; pEGFR/pERK/pAKT loss within hours; apoptosis in EGFR-addicted lines.",
+ cav:"T790M and C797S gatekeeper resistance; MET amplification bypass; wild-type EGFR inhibition causes rash and diarrhoea, so mutant selectivity matters.",
+ t:1,cl:"Approved (multiple generations of TKI)",
+ ev:["FLAURA","IPASS","AURA3 trials"]},
+
+{s:"ERBB2",n:"Erb-b2 receptor tyrosine kinase 2 (HER2)",e:2064,g:"ENSG00000141736",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Breast cancer",a:"Oncology",r:"Amplified driver in ~15–20% of breast cancer",
+ dir:"knockdown",mod:["antibody (trastuzumab, pertuzumab)","ADC (T-DM1, T-DXd)","TKI (tucatinib, lapatinib)","siRNA"],
+ pos:"Receptor / co-receptor",eff:"Blocks HER2:HER3 heterodimer signalling into PI3K–AKT",
+ res:"Marked survival benefit in adjuvant and metastatic settings; ADCs act even at low HER2 expression via bystander payload.",
+ cav:"Cardiotoxicity from HER2 inhibition in cardiomyocytes; PIK3CA mutation and PTEN loss confer downstream resistance.",
+ t:1,cl:"Approved across several modalities",
+ ev:["HERA, CLEOPATRA, DESTINY-Breast trials","ERBB2 amplification in cBioPortal/TCGA BRCA"]},
+
+{s:"MET",n:"MET proto-oncogene, receptor tyrosine kinase",e:4233,g:"ENSG00000105976",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Non-small cell lung cancer",a:"Oncology",r:"Exon-14 skipping driver; amplification drives EGFR-TKI resistance",
+ dir:"knockdown",mod:["TKI (capmatinib, tepotinib)","antibody","siRNA","CRISPR-KO"],
+ pos:"Receptor — parallel entry point into RAS–MAPK/PI3K",
+ eff:"Closes the principal bypass route around EGFR blockade",
+ res:"Restores sensitivity to EGFR TKI in MET-amplified resistant models; single-agent responses in MET exon-14 NSCLC.",
+ cav:"Peripheral oedema is a class effect; MET amplification must be confirmed by FISH/NGS rather than IHC alone.",
+ t:1,cl:"Approved (MET exon-14 skipping)",ev:["GEOMETRY mono-1","VISION trials"]},
+
+{s:"ALK",n:"ALK receptor tyrosine kinase",e:238,g:"ENSG00000171094",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Non-small cell lung cancer",a:"Oncology",r:"EML4-ALK fusion driver in ~5% of lung adenocarcinoma",
+ dir:"knockdown",mod:["TKI (alectinib, lorlatinib)","siRNA","CRISPR-KO"],
+ pos:"Constitutively dimerised receptor kinase",eff:"Blocks fusion-driven MAPK, PI3K and JAK–STAT output",
+ res:"Very high response rates and multi-year PFS; CNS activity with later-generation agents.",
+ cav:"Compound resistance mutations (G1202R, L1196M) accumulate under sequential TKI pressure.",
+ t:1,cl:"Approved",ev:["ALEX, CROWN trials"]},
+
+{s:"RET",n:"Ret proto-oncogene",e:5979,g:"ENSG00000165731",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Medullary thyroid carcinoma",a:"Oncology",r:"Germline/somatic activating mutation (MEN2) and fusion driver",
+ dir:"knockdown",mod:["selective TKI (selpercatinib, pralsetinib)","siRNA"],
+ pos:"Receptor kinase",eff:"Blocks RET-driven MAPK/PI3K",
+ res:"High objective response rate in RET-altered thyroid and lung tumours with far less off-target VEGFR toxicity than multikinase inhibitors.",
+ cav:"Solvent-front (G810) resistance mutations emerge.",
+ t:1,cl:"Approved",ev:["LIBRETTO-001","ARROW"]},
+
+{s:"KIT",n:"KIT proto-oncogene, receptor tyrosine kinase",e:3815,g:"ENSG00000157404",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Gastrointestinal stromal tumour",a:"Oncology",r:"Activating exon-11/9 mutations in ~80% of GIST",
+ dir:"knockdown",mod:["TKI (imatinib, sunitinib, ripretinib)","siRNA"],
+ pos:"Receptor kinase",eff:"Blocks KIT-driven MAPK/PI3K/STAT",
+ res:"Durable disease control; the founding example of genotype-directed solid-tumour therapy.",
+ cav:"Exon-9 and wild-type/SDH-deficient GIST respond poorly to standard-dose imatinib.",
+ t:1,cl:"Approved",ev:["B2222 trial","GIST genotype–response correlation studies"]},
+
+{s:"FGFR2",n:"Fibroblast growth factor receptor 2",e:2263,g:"ENSG00000066468",
+ p:"FGF/FGFR signalling",pid:"hsa04010",pdb:"KEGG",
+ d:"Intrahepatic cholangiocarcinoma",a:"Oncology",r:"FGFR2 fusion driver in ~10–15%",
+ dir:"knockdown",mod:["FGFR inhibitor (pemigatinib, futibatinib)","siRNA"],
+ pos:"Receptor kinase",eff:"Blocks FGF-driven MAPK/PI3K",
+ res:"~35% objective response in fusion-positive disease.",
+ cav:"Class hyperphosphataemia from FGFR1 inhibition in kidney; gatekeeper V565 mutations.",
+ t:1,cl:"Approved",ev:["FIGHT-202","FOENIX-CCA2"]},
+
+{s:"FLT3",n:"Fms related receptor tyrosine kinase 3",e:2322,g:"ENSG00000122025",
+ p:"ErbB / RTK signalling",pid:"hsa04012",pdb:"KEGG",
+ d:"Acute myeloid leukaemia",a:"Oncology",r:"Internal tandem duplication (ITD) driver, ~25% of AML, poor prognosis",
+ dir:"knockdown",mod:["TKI (midostaurin, gilteritinib, quizartinib)","siRNA"],
+ pos:"Receptor kinase",eff:"Blocks constitutive STAT5/MAPK/PI3K signalling",
+ res:"Improved survival when added to induction chemotherapy; differentiation syndrome can occur as blasts mature.",
+ cav:"Resistance via FLT3-F691L, RAS pathway mutation and stromal FLT3 ligand surge after chemotherapy.",
+ t:1,cl:"Approved",ev:["RATIFY","ADMIRAL","QuANTUM-First"]},
+
+{s:"ABL1",n:"ABL proto-oncogene 1, non-receptor tyrosine kinase",e:25,g:"ENSG00000097007",
+ p:"BCR-ABL fusion kinase signalling",pid:"hsa05220",pdb:"KEGG",
+ d:"Chronic myeloid leukaemia",a:"Oncology",r:"BCR-ABL1 fusion is the necessary and sufficient driver",
+ dir:"knockdown",mod:["ATP-competitive TKI (imatinib, dasatinib, ponatinib)","allosteric inhibitor (asciminib)","siRNA"],
+ pos:"Fusion kinase — single obligate node",
+ eff:"Abolishes constitutive kinase activity and downstream STAT5/PI3K/MAPK",
+ res:"Deep molecular remission in the large majority of chronic-phase patients; near-normal life expectancy.",
+ cav:"T315I confers resistance to most ATP-site TKIs (ponatinib or asciminib required); leukaemic stem cells are not fully TKI-dependent, so relapse can follow discontinuation.",
+ t:1,cl:"Approved",ev:["IRIS trial long-term follow-up","ASCEMBL"]},
+
+{s:"JAK2",n:"Janus kinase 2",e:3717,g:"ENSG00000096968",
+ p:"JAK–STAT signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Myelofibrosis / polycythaemia vera",a:"Oncology",r:"V617F gain-of-function drives cytokine-independent proliferation",
+ dir:"knockdown",mod:["JAK1/2 inhibitor (ruxolitinib, fedratinib)","siRNA","CRISPR-KO"],
+ pos:"Receptor-associated kinase",eff:"Blocks STAT3/STAT5 phosphorylation",
+ res:"Spleen volume reduction and symptom improvement; reduced inflammatory cytokines.",
+ cav:"Largely not clone-selective — allele burden often persists; anaemia and thrombocytopenia are on-target; withdrawal can cause cytokine rebound.",
+ t:1,cl:"Approved",ev:["COMFORT-I/II","JAKARTA"]},
+
+{s:"STAT3",n:"Signal transducer and activator of transcription 3",e:6774,g:"ENSG00000168610",
+ p:"JAK–STAT signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Solid tumours (pan-cancer)",a:"Oncology",r:"Transcriptional effector of tumour-promoting inflammation and immune evasion",
+ dir:"knockdown",mod:["ASO (danvatirsen)","decoy oligonucleotide","degrader","shRNA"],
+ pos:"Terminal transcription factor",eff:"Removes the transcriptional output rather than the upstream kinase",
+ res:"Reduced MYC, BCL2L1, VEGFA and immunosuppressive gene expression; improved T-cell infiltration in syngeneic models.",
+ cav:"Transcription factors are hard to drug; STAT3 is required for normal immune and wound-healing programmes; clinical ASO results have been mixed.",
+ t:3,cl:"Clinical-stage, no approval",ev:["STAT3 ASO phase 1/2 programmes","STAT3 conditional knockout mouse phenotypes (MGI)"]},
+
+/* ---------- ONCOLOGY · PI3K–AKT–mTOR ---------- */
+{s:"PIK3CA",n:"Phosphatidylinositol-4,5-bisphosphate 3-kinase catalytic subunit alpha",e:5290,g:"ENSG00000121879",
+ p:"PI3K–AKT–mTOR signalling",pid:"hsa04151",pdb:"KEGG",
+ d:"Breast cancer",a:"Oncology",r:"Most frequently mutated oncogene in HR+ breast cancer (~40%); H1047R/E545K activate lipid kinase activity",
+ dir:"knockdown",mod:["isoform-selective inhibitor (alpelisib)","mutant-selective inhibitor","siRNA","CRISPR-KO"],
+ pos:"Apex lipid kinase of the PI3K arm",eff:"Blocks PIP3 generation, therefore AKT recruitment",
+ res:"Loss of pAKT S473 and pS6; PFS benefit when combined with fulvestrant in PIK3CA-mutant HR+ disease.",
+ cav:"Hyperglycaemia is an on-target class effect (p110α is required for insulin signalling) and can itself reactivate the pathway through insulin feedback — pair with dietary/SGLT2 control in models. PTEN loss causes resistance.",
+ t:1,cl:"Approved (alpelisib; capivasertib downstream)",
+ ev:["SOLAR-1","BYLieve","TCGA BRCA mutation frequency"]},
+
+{s:"AKT1",n:"AKT serine/threonine kinase 1",e:207,g:"ENSG00000142208",
+ p:"PI3K–AKT–mTOR signalling",pid:"hsa04151",pdb:"KEGG",
+ d:"Breast cancer",a:"Oncology",r:"Central survival kinase; E17K activating mutation in a small subset",
+ dir:"knockdown",mod:["pan-AKT inhibitor (capivasertib, ipatasertib)","siRNA","CRISPR-KO"],
+ pos:"Central kinase node",eff:"Blocks the pathway below PI3K, covering PTEN-loss and PIK3CA-mutant contexts",
+ res:"pGSK3β/pPRAS40 loss; apoptosis in PTEN-null lines; PFS benefit in AKT-pathway-altered HR+ breast cancer.",
+ cav:"Relieves mTORC1-dependent negative feedback, causing RTK re-activation; isoform redundancy (AKT2/AKT3).",
+ t:1,cl:"Approved (capivasertib in altered tumours)",ev:["CAPItello-291","IPATential150"]},
+
+{s:"PTEN",n:"Phosphatase and tensin homolog",e:5728,g:"ENSG00000171862",
+ p:"PI3K–AKT–mTOR signalling",pid:"hsa04151",pdb:"KEGG",
+ d:"Prostate cancer",a:"Oncology",r:"Tumour suppressor — deletion/loss removes the brake on PIP3",
+ dir:"overexpress",mod:["cDNA re-expression","mRNA","enhancer/epigenetic de-repression"],
+ pos:"Negative regulator opposite PI3K",eff:"Restoring PTEN lowers PIP3 and shuts the pathway from within",
+ res:"Re-expression reduces pAKT, restores senescence and suppresses growth in PTEN-null models — the informative control for PI3K-pathway experiments.",
+ cav:"Do not knock PTEN down to 'block' the pathway; loss activates it. Restoration is difficult to deliver therapeutically; dose-sensitive (haploinsufficient) biology.",
+ t:3,cl:"No restoration therapy approved; PTEN status used to select AKT inhibitors",
+ ev:["Pten conditional knockout mouse prostate neoplasia (MGI/IMPC)","IPATential150 biomarker analysis"]},
+
+{s:"MTOR",n:"Mechanistic target of rapamycin kinase",e:2475,g:"ENSG00000198793",
+ p:"PI3K–AKT–mTOR signalling",pid:"hsa04150",pdb:"KEGG",
+ d:"Renal cell carcinoma",a:"Oncology",r:"Effector kinase controlling translation, HIF1A synthesis and metabolism",
+ dir:"knockdown",mod:["rapalog (everolimus, temsirolimus)","ATP-competitive mTOR kinase inhibitor","siRNA"],
+ pos:"Terminal kinase of the PI3K arm",eff:"Blocks cap-dependent translation via 4E-BP1/S6K",
+ res:"Reduced pS6 and HIF1A protein; cytostatic response, modest PFS benefit.",
+ cav:"Rapalogs incompletely inhibit 4E-BP1 and relieve S6K→IRS1 feedback, paradoxically raising pAKT; TSC1/TSC2 or MTOR mutations predict exceptional responders.",
+ t:1,cl:"Approved",ev:["RECORD-1","exceptional-responder sequencing reports"]},
+
+/* ---------- ONCOLOGY · cell cycle / p53 ---------- */
+{s:"CDK4",n:"Cyclin dependent kinase 4",e:1019,g:"ENSG00000135446",
+ p:"G1/S cell-cycle checkpoint",pid:"hsa04110",pdb:"KEGG",
+ d:"Breast cancer",a:"Oncology",r:"Kinase that phosphorylates RB1 to release E2F and license S-phase entry",
+ dir:"knockdown",mod:["CDK4/6 inhibitor (palbociclib, ribociclib, abemaciclib)","siRNA","degrader"],
+ pos:"G1 restriction point",eff:"Holds RB1 hypophosphorylated, blocking E2F-driven transcription",
+ res:"G1 arrest, reduced Ki-67, senescence-like phenotype; large PFS gains with endocrine therapy in HR+/HER2− disease; also increases antigen presentation and T-cell activity.",
+ cav:"Requires intact RB1 — RB1 loss is the dominant resistance mechanism, so always genotype RB1 first. Neutropenia is on-target. Cytostatic, not cytotoxic.",
+ t:1,cl:"Approved",ev:["PALOMA-2/3","MONALEESA-2","MONARCH-3","RB1 loss in resistance biopsies"]},
+
+{s:"CCND1",n:"Cyclin D1",e:595,g:"ENSG00000110092",
+ p:"G1/S cell-cycle checkpoint",pid:"hsa04110",pdb:"KEGG",
+ d:"Mantle cell lymphoma",a:"Oncology",r:"t(11;14) places CCND1 under the IGH enhancer — constitutive overexpression",
+ dir:"knockdown",mod:["siRNA","shRNA","CRISPRi","indirect via CDK4/6 inhibition"],
+ pos:"Regulatory cyclin partner of CDK4/6",eff:"Removes the activating subunit rather than the kinase",
+ res:"G1 arrest and reduced RB1 phosphorylation; sensitises to BTK inhibition and venetoclax in MCL models.",
+ cav:"CCND2/CCND3 can substitute in some lineages; direct cyclin knockdown is not yet clinically tractable.",
+ t:3,cl:"Indirect targeting only",ev:["t(11;14) defining cytogenetics of MCL","CCND1 shRNA studies in MCL lines"]},
+
+{s:"RB1",n:"RB transcriptional corepressor 1",e:5925,g:"ENSG00000139687",
+ p:"G1/S cell-cycle checkpoint",pid:"hsa04110",pdb:"KEGG",
+ d:"Small cell lung cancer",a:"Oncology",r:"Tumour suppressor; biallelic loss with TP53 defines SCLC",
+ dir:"overexpress",mod:["cDNA re-expression (experimental)","none clinical"],
+ pos:"Gatekeeper of E2F",eff:"Restoration re-imposes the G1 checkpoint",
+ res:"Re-expression arrests cells; more usefully, RB1 status is the predictive biomarker deciding whether CDK4/6 blockade can work at all.",
+ cav:"Loss-of-function suppressors are generally not druggable by restoration; exploit synthetic-lethal partners (e.g. AURKB, CHEK1) instead.",
+ t:3,cl:"Biomarker use only",ev:["RB1/TP53 co-loss in SCLC genomic studies","DepMap RB1-null dependency analyses"]},
+
+{s:"TP53",n:"Tumour protein p53",e:7157,g:"ENSG00000141510",
+ p:"p53 tumour-suppressor signalling",pid:"hsa04115",pdb:"KEGG",
+ d:"Pan-cancer",a:"Oncology",r:"Most commonly mutated tumour suppressor; guardian of the DNA-damage response",
+ dir:"reactivate",mod:["mutant reactivator (e.g. Y220C-selective)","MDM2 inhibition in TP53-wild-type","gene delivery"],
+ pos:"Transcriptional hub of the damage response",
+ eff:"Restores CDKN1A/BBC3/PUMA transcription and apoptotic competence",
+ res:"Allele-specific reactivators restore DNA binding and induce apoptosis in Y220C models; wild-type restoration causes rapid tumour regression in mouse models.",
+ cav:"Missense mutants can be gain-of-function and dominant-negative; global p53 reactivation risks normal-tissue toxicity. Never 'knock down TP53 to block the pathway' outside a mechanistic control.",
+ t:2,cl:"Allele-selective reactivators in early trials",
+ ev:["p53 restoration reverses tumour growth in switchable mouse models","IARC/UMD TP53 mutation database"]},
+
+{s:"MDM2",n:"MDM2 proto-oncogene, E3 ubiquitin protein ligase",e:4193,g:"ENSG00000135679",
+ p:"p53 tumour-suppressor signalling",pid:"hsa04115",pdb:"KEGG",
+ d:"Liposarcoma",a:"Oncology",r:"Amplified negative regulator that degrades wild-type p53",
+ dir:"knockdown",mod:["MDM2–p53 interaction inhibitor (nutlin class)","siRNA","degrader"],
+ pos:"Negative regulator of p53",eff:"Blocking MDM2 raises p53 — a pathway-activating perturbation achieved by knocking a gene down",
+ res:"Stabilised p53, induction of CDKN1A and MDM2 itself, cell-cycle arrest and apoptosis in TP53-wild-type, MDM2-amplified tumours.",
+ cav:"Only works when TP53 is wild-type — genotype first. Dose-limiting thrombocytopenia; TP53 mutations emerge under treatment.",
+ t:2,cl:"Phase 2/3",ev:["Nutlin-3 mechanism of action studies","MDM2 amplification in well-differentiated liposarcoma"]},
+
+{s:"MYC",n:"MYC proto-oncogene, bHLH transcription factor",e:4609,g:"ENSG00000136997",
+ p:"MYC transcriptional programme",pid:"R-HSA-8878166",pdb:"Reactome",
+ d:"Burkitt lymphoma",a:"Oncology",r:"t(8;14) translocation driver; master transcriptional amplifier",
+ dir:"knockdown",mod:["BET inhibitor (indirect)","siRNA/shRNA","CRISPRi at enhancer","Omomyc-style dominant negative"],
+ pos:"Terminal transcription factor",eff:"Collapses the ribosome-biogenesis and metabolic programme",
+ res:"Rapid apoptosis in MYC-addicted lymphoma; in switchable mouse models MYC withdrawal causes sustained tumour regression and differentiation.",
+ cav:"No direct clinical MYC inhibitor; BET inhibitors are indirect and have broad transcriptional effects. MYC is required by proliferating normal tissue (gut, marrow).",
+ t:3,cl:"Indirect/experimental",ev:["MYC-switchable transgenic mouse regression studies","BET inhibitor preclinical lymphoma data"]},
+
+/* ---------- ONCOLOGY · DNA damage / synthetic lethality ---------- */
+{s:"PARP1",n:"Poly(ADP-ribose) polymerase 1",e:142,g:"ENSG00000143799",
+ p:"Base-excision repair / DNA damage response",pid:"hsa03410",pdb:"KEGG",
+ d:"BRCA-mutant ovarian cancer",a:"Oncology",r:"Single-strand break repair enzyme; synthetic-lethal partner of homologous-recombination deficiency",
+ dir:"knockdown",mod:["inhibitor/trapper (olaparib, niraparib)","siRNA","CRISPR-KO"],
+ pos:"Single-strand repair node",
+ eff:"Blocks SSB repair and traps PARP on DNA, converting lesions to double-strand breaks that HR-deficient cells cannot repair",
+ res:"Selective killing of BRCA1/2-mutant cells (10–100× sensitivity window); PFS benefit as maintenance in HR-deficient ovarian and breast cancer. γH2AX and RAD51-foci assays are the standard readouts.",
+ cav:"Trapping, not just catalytic inhibition, drives potency — so siRNA knockdown gives a weaker phenotype than inhibitors, an important experimental distinction. Resistance via BRCA reversion mutations, 53BP1/Shieldin loss and drug efflux.",
+ t:1,cl:"Approved",ev:["SOLO-1, PAOLA-1, PRIMA trials","Original 2005 synthetic-lethality reports in Nature","DepMap BRCA-mutant PARP sensitivity"]},
+
+{s:"BRCA1",n:"BRCA1 DNA repair associated",e:672,g:"ENSG00000012048",
+ p:"Homologous recombination repair",pid:"hsa03440",pdb:"KEGG",
+ d:"Hereditary breast and ovarian cancer",a:"Oncology",r:"Tumour suppressor; loss causes HR deficiency and genomic scarring",
+ dir:"knockdown",mod:["siRNA/CRISPR-KO to model HRD","not a therapeutic target"],
+ pos:"HR repair machinery",eff:"Knockdown creates, rather than blocks, the disease state — used to build sensitised models",
+ res:"HR-deficient phenotype with loss of RAD51 foci; confers PARP-inhibitor and platinum sensitivity. This is the standard way to build an isogenic sensitivity model.",
+ cav:"Never a therapeutic knockdown target. Reversion mutations restore function and drive clinical resistance.",
+ t:1,cl:"Biomarker for PARP inhibitor and platinum selection",
+ ev:["ClinVar BRCA1 variant interpretations","ENIGMA consortium classification","myriad HRD score literature"]},
+
+{s:"BRCA2",n:"BRCA2 DNA repair associated",e:675,g:"ENSG00000139618",
+ p:"Homologous recombination repair",pid:"hsa03440",pdb:"KEGG",
+ d:"Prostate cancer (metastatic castration-resistant)",a:"Oncology",r:"Tumour suppressor; germline/somatic loss defines a PARP-sensitive subgroup",
+ dir:"knockdown",mod:["model-building only"],
+ pos:"RAD51 loader",eff:"Loss abolishes HR",
+ res:"BRCA2-altered mCRPC responds to olaparib with radiographic PFS benefit; loss is the single strongest predictor within the HRR gene set.",
+ cav:"Other HRR genes (ATM, CDK12) are much weaker predictors — do not treat 'HRR-mutant' as one class.",
+ t:1,cl:"Approved biomarker (PROfound)",ev:["PROfound trial subgroup analysis","ClinVar/ENIGMA"]},
+
+{s:"ATR",n:"ATR serine/threonine kinase",e:545,g:"ENSG00000175054",
+ p:"Replication stress / DNA damage checkpoint",pid:"hsa04115",pdb:"KEGG",
+ d:"ATM-deficient and replication-stressed tumours",a:"Oncology",r:"Apical checkpoint kinase that stabilises stalled forks",
+ dir:"knockdown",mod:["ATR inhibitor (ceralasertib, berzosertib)","siRNA","CRISPR-KO"],
+ pos:"Apical checkpoint kinase, parallel to ATM",
+ eff:"Removes the replication-stress checkpoint, forcing damaged cells into mitosis",
+ res:"Synthetic lethality with ATM loss, ARID1A loss, high MYC or CCNE1 amplification; mitotic catastrophe and micronucleus formation; cGAS–STING activation can add an immune component.",
+ cav:"Overlapping myelosuppression with chemotherapy; schedule matters more than dose for tolerability.",
+ t:2,cl:"Phase 2",ev:["ATM/ATR synthetic-lethality CRISPR screens","Ceralasertib combination trials"]},
+
+{s:"POLQ",n:"DNA polymerase theta",e:10721,g:"ENSG00000051341",
+ p:"Microhomology-mediated end joining",pid:"R-HSA-5693571",pdb:"Reactome",
+ d:"HR-deficient breast and ovarian cancer",a:"Oncology",r:"Backup repair polymerase that HR-deficient cells depend on",
+ dir:"knockdown",mod:["polymerase/helicase-domain inhibitor","siRNA","CRISPR-KO"],
+ pos:"Alternative end-joining pathway",
+ eff:"Closes the last repair route available to BRCA-deficient cells",
+ res:"Synthetic lethality with BRCA1/2 loss, including in PARP-inhibitor-resistant models — a leading route around acquired PARPi resistance.",
+ cav:"Early clinical data only; combination toxicity with PARP inhibitors still being defined.",
+ t:2,cl:"Phase 1/2",ev:["POLQ–BRCA synthetic lethality reported independently by several groups in 2015","CRISPR co-dependency in DepMap"]},
+
+{s:"WRN",n:"WRN RecQ like helicase",e:7486,g:"ENSG00000165392",
+ p:"DNA helicase / repeat resolution",pid:"R-HSA-73894",pdb:"Reactome",
+ d:"Microsatellite-instability-high colorectal cancer",a:"Oncology",r:"Helicase required to unwind expanded TA repeats in MSI-H genomes",
+ dir:"knockdown",mod:["helicase inhibitor","siRNA","CRISPR-KO","degrader"],
+ pos:"Repeat-resolution helicase",
+ eff:"Loss causes catastrophic DSBs specifically at expanded repeats in MSI-H cells",
+ res:"Strong, highly selective lethality in MSI-H lines and xenografts with no effect in MSS lines — one of the cleanest genotype-selective dependencies found by genome-wide CRISPR screening.",
+ cav:"Germline WRN loss causes Werner progeria syndrome, so chronic systemic inhibition needs careful evaluation.",
+ t:2,cl:"Phase 1",ev:["Independent 2019 genome-wide CRISPR screens (Broad, Sanger, Novartis) converging on WRN in MSI-H lines","DepMap MSI-H selective dependency"]},
+
+{s:"PRMT5",n:"Protein arginine methyltransferase 5",e:10419,g:"ENSG00000100462",
+ p:"Arginine methylation / spliceosome regulation",pid:"R-HSA-8953750",pdb:"Reactome",
+ d:"MTAP-deleted tumours (glioma, mesothelioma, pancreatic)",a:"Oncology",r:"Methyltransferase rendered vulnerable by MTAP co-deletion with CDKN2A",
+ dir:"knockdown",mod:["MTA-cooperative inhibitor","siRNA","CRISPR-KO"],
+ pos:"Chromatin/splicing regulator",
+ eff:"MTAP loss raises intracellular MTA, which partially inhibits PRMT5 and sensitises cells to further inhibition",
+ res:"Selective growth inhibition in MTAP-null lines; splicing defects and intron retention as pharmacodynamic markers. MTA-cooperative inhibitors widen the therapeutic window versus first-generation compounds.",
+ cav:"First-generation PRMT5 inhibitors were not selective and caused dose-limiting cytopenias; confirm MTAP deletion by NGS/IHC, not by CDKN2A status alone.",
+ t:2,cl:"Phase 1/2",ev:["2016 Science/Cell reports of MTAP-deletion PRMT5 vulnerability","DepMap MTAP-null co-dependency"]},
+
+{s:"MTAP",n:"Methylthioadenosine phosphorylase",e:4507,g:"ENSG00000099810",
+ p:"Methionine salvage pathway",pid:"hsa00270",pdb:"KEGG",
+ d:"MTAP-deleted tumours",a:"Oncology",r:"Passenger deletion adjacent to CDKN2A that creates the PRMT5 vulnerability",
+ dir:"knockdown",mod:["model building only"],
+ pos:"Metabolic enzyme upstream of MTA levels",
+ eff:"Deletion raises MTA and sensitises PRMT5",
+ res:"Isogenic MTAP knockout confers PRMT5-inhibitor sensitivity — the required control experiment for this programme.",
+ cav:"Not a therapeutic target; it is the biomarker.",
+ t:1,cl:"Patient-selection biomarker",ev:["CDKN2A/MTAP co-deletion frequency in cBioPortal (~15% pan-cancer)"]},
+
+/* ---------- ONCOLOGY · apoptosis, ferroptosis, proteostasis ---------- */
+{s:"BCL2",n:"BCL2 apoptosis regulator",e:596,g:"ENSG00000171791",
+ p:"Intrinsic apoptosis",pid:"hsa04210",pdb:"KEGG",
+ d:"Chronic lymphocytic leukaemia",a:"Oncology",r:"Anti-apoptotic guardian; overexpressed and required for CLL survival",
+ dir:"knockdown",mod:["BH3-mimetic (venetoclax)","siRNA","ASO","degrader"],
+ pos:"Mitochondrial apoptosis gatekeeper",
+ eff:"Releases BIM/BAX/BAK to trigger MOMP",
+ res:"Rapid, deep apoptosis; high rates of undetectable minimal residual disease in CLL. BH3 profiling predicts response before treatment.",
+ cav:"Tumour lysis syndrome requires dose ramp-up. Resistance via BCL2 G101V and MCL1/BCL2L1 upregulation — always measure the whole BCL2 family, not BCL2 alone.",
+ t:1,cl:"Approved",ev:["MURANO, CLL14 trials","BH3 profiling literature"]},
+
+{s:"MCL1",n:"MCL1 apoptosis regulator, BCL2 family member",e:4170,g:"ENSG00000143384",
+ p:"Intrinsic apoptosis",pid:"hsa04210",pdb:"KEGG",
+ d:"Multiple myeloma / AML",a:"Oncology",r:"Anti-apoptotic paralogue; principal venetoclax-resistance mechanism",
+ dir:"knockdown",mod:["MCL1 inhibitor","siRNA","CRISPR-KO"],
+ pos:"Parallel apoptosis gatekeeper",
+ eff:"Closes the escape route left open by BCL2 inhibition",
+ res:"Resensitises venetoclax-resistant models; combination is strongly synergistic in vitro.",
+ cav:"Cardiac toxicity halted several clinical programmes — MCL1 is required by cardiomyocytes. Treat in vivo cardiac readouts as mandatory.",
+ t:3,cl:"Clinical programmes paused/limited by toxicity",
+ ev:["MCL1 conditional knockout cardiomyopathy in mice","Venetoclax-resistance CRISPR screens"]},
+
+{s:"GPX4",n:"Glutathione peroxidase 4",e:2879,g:"ENSG00000167468",
+ p:"Ferroptosis",pid:"hsa04216",pdb:"KEGG",
+ d:"Mesenchymal / therapy-persistent cancer cells",a:"Oncology",r:"Only enzyme that reduces lipid hydroperoxides; the ferroptosis brake",
+ dir:"knockdown",mod:["covalent inhibitor (RSL3, ML210)","siRNA","CRISPR-KO"],
+ pos:"Terminal antioxidant defence of the lipid-peroxidation axis",
+ eff:"Removing GPX4 lets lipid peroxides accumulate and execute ferroptosis",
+ res:"Selective death of mesenchymal, drug-tolerant persister cells; rescued by ferrostatin-1, liproxstatin-1 or iron chelation — the required specificity controls. C11-BODIPY oxidation is the standard readout.",
+ cav:"No selective clinical-grade inhibitor yet; GPX4 loss is lethal in normal tissue in vivo. Cell density, cystine and lipid composition of the medium strongly change the phenotype.",
+ t:3,cl:"Preclinical",ev:["Ferroptosis persister-cell studies","ACSL4 dependency as a genetic modifier"]},
+
+{s:"SLC7A11",n:"Solute carrier family 7 member 11 (xCT)",e:23657,g:"ENSG00000151012",
+ p:"Ferroptosis",pid:"hsa04216",pdb:"KEGG",
+ d:"Solid tumours with high oxidative stress",a:"Oncology",r:"Cystine/glutamate antiporter that supplies cysteine for glutathione synthesis",
+ dir:"knockdown",mod:["erastin/imidazole ketone erastin","sulfasalazine","siRNA","CRISPR-KO"],
+ pos:"Upstream of glutathione and therefore of GPX4 activity",
+ eff:"Cysteine starvation collapses glutathione and disables GPX4 indirectly",
+ res:"Ferroptotic death in cysteine-auxotrophic tumours; synergy with radiotherapy and immunotherapy (IFN-γ represses SLC7A11).",
+ cav:"Cells with high transsulfuration flux (CBSE/CTH) escape; plasma cystine levels alter in vivo translation.",
+ t:3,cl:"Preclinical/repurposing",ev:["Erastin mechanism studies","IFN-γ–SLC7A11 repression in immunotherapy models"]},
+
+{s:"XPO1",n:"Exportin 1",e:7514,g:"ENSG00000082898",
+ p:"Nuclear export / tumour-suppressor localisation",pid:"R-HSA-159236",pdb:"Reactome",
+ d:"Multiple myeloma",a:"Oncology",r:"Nuclear export receptor that removes p53, FOXO and IκB from the nucleus",
+ dir:"knockdown",mod:["selective inhibitor of nuclear export (selinexor)","siRNA"],
+ pos:"Nucleocytoplasmic transport",
+ eff:"Traps tumour suppressors in the nucleus, restoring their function",
+ res:"Nuclear retention of p53/IκB, apoptosis in myeloma; activity in penta-refractory disease.",
+ cav:"Substantial nausea, thrombocytopenia, hyponatraemia; narrow therapeutic index.",
+ t:1,cl:"Approved",ev:["STORM, BOSTON trials"]},
+
+{s:"PSMB5",n:"Proteasome 20S subunit beta 5",e:5693,g:"ENSG00000100804",
+ p:"Ubiquitin–proteasome system",pid:"hsa03050",pdb:"KEGG",
+ d:"Multiple myeloma",a:"Oncology",r:"Chymotrypsin-like catalytic subunit; plasma cells are uniquely proteasome-dependent",
+ dir:"knockdown",mod:["proteasome inhibitor (bortezomib, carfilzomib)","siRNA"],
+ pos:"Terminal protein-degradation machinery",
+ eff:"Blocks degradation of misfolded immunoglobulin and of IκB",
+ res:"Unfolded-protein-response-driven apoptosis in myeloma; NF-κB inhibition contributes.",
+ cav:"PSMB5 mutations and heat-shock response cause resistance; peripheral neuropathy is dose-limiting for bortezomib.",
+ t:1,cl:"Approved",ev:["APEX trial","PSMB5 mutation in resistant lines"]},
+
+{s:"CRBN",n:"Cereblon",e:51185,g:"ENSG00000113851",
+ p:"Ubiquitin–proteasome system / molecular glue degradation",pid:"hsa04120",pdb:"KEGG",
+ d:"Multiple myeloma",a:"Oncology",r:"CRL4 substrate receptor hijacked by IMiDs to degrade IKZF1/IKZF3",
+ dir:"activate",mod:["molecular glue (lenalidomide, pomalidomide, mezigdomide)"],
+ pos:"E3 ligase adaptor",
+ eff:"Redirects, rather than blocks, degradation — a gain-of-function perturbation",
+ res:"Rapid IKZF1/IKZF3 degradation, loss of IRF4 and MYC, myeloma apoptosis plus T-cell co-stimulation.",
+ cav:"CRBN loss or mutation is the dominant resistance mechanism — measure CRBN expression before concluding a drug failed. Species differences: mouse Crbn does not bind IMiDs the same way.",
+ t:1,cl:"Approved",ev:["Identification of cereblon as the thalidomide target (2010)","IKZF1/3 degradation mechanism (2014)"]},
+
+{s:"IKZF1",n:"IKAROS family zinc finger 1",e:10320,g:"ENSG00000185811",
+ p:"Molecular glue degradation / lymphoid transcription",pid:"hsa04120",pdb:"KEGG",
+ d:"Multiple myeloma",a:"Oncology",r:"Transcription factor sustaining IRF4–MYC axis in plasma cells",
+ dir:"knockdown",mod:["targeted degradation via CRBN","shRNA"],
+ pos:"Transcription factor",eff:"Collapses the IRF4–MYC survival programme",
+ res:"shRNA knockdown phenocopies lenalidomide — the experiment that proved the mechanism.",
+ cav:"Also required for normal lymphopoiesis.",
+ t:1,cl:"Degraded by approved drugs",ev:["IMiD mechanism-of-action studies"]},
+
+/* ---------- ONCOLOGY · hormone, immune, lineage ---------- */
+{s:"AR",n:"Androgen receptor",e:367,g:"ENSG00000169083",
+ p:"Nuclear hormone receptor signalling",pid:"hsa04915",pdb:"KEGG",
+ d:"Prostate cancer",a:"Oncology",r:"Lineage-survival transcription factor and principal driver",
+ dir:"knockdown",mod:["antagonist (enzalutamide, apalutamide)","degrader (ARV-110 class)","androgen synthesis inhibition (abiraterone)","siRNA"],
+ pos:"Ligand-activated transcription factor",
+ eff:"Blocks AR-driven transcription of KLK3, TMPRSS2 and cell-cycle genes",
+ res:"PSA decline, radiographic PFS and overall-survival benefit across disease states.",
+ cav:"Resistance via AR amplification, AR-V7 splice variant (lacks the ligand-binding domain, so antagonists fail but degraders may not), lineage plasticity to neuroendocrine disease.",
+ t:1,cl:"Approved",ev:["PREVAIL, AFFIRM, COU-AA-302","AR-V7 as a resistance biomarker"]},
+
+{s:"ESR1",n:"Estrogen receptor 1",e:2099,g:"ENSG00000091831",
+ p:"Nuclear hormone receptor signalling",pid:"hsa04915",pdb:"KEGG",
+ d:"Breast cancer (HR-positive)",a:"Oncology",r:"Driver transcription factor; ligand-binding-domain mutations cause endocrine resistance",
+ dir:"knockdown",mod:["SERD (fulvestrant, elacestrant)","SERM (tamoxifen)","degrader","siRNA"],
+ pos:"Ligand-activated transcription factor",
+ eff:"Degradation removes the receptor entirely, which also works for constitutively active Y537S/D538G mutants",
+ res:"Growth arrest in ER-dependent lines; elacestrant improves PFS specifically in ESR1-mutant disease — a clean example of mutation-directed degrader use.",
+ cav:"ctDNA is needed to detect ESR1 mutations, which are usually acquired and subclonal; tissue from diagnosis will miss them.",
+ t:1,cl:"Approved",ev:["EMERALD trial","ctDNA ESR1 mutation tracking studies"]},
+
+{s:"PDCD1",n:"Programmed cell death 1 (PD-1)",e:5133,g:"ENSG00000188389",
+ p:"Immune checkpoint signalling",pid:"hsa05235",pdb:"KEGG",
+ d:"Melanoma / NSCLC",a:"Oncology",r:"Inhibitory receptor that restrains cytotoxic T cells in the tumour",
+ dir:"knockdown",mod:["blocking antibody (pembrolizumab, nivolumab)","CRISPR-KO in engineered T cells"],
+ pos:"T-cell inhibitory receptor",
+ eff:"Releases the brake on TCR signalling — a perturbation of the immune compartment, not the tumour",
+ res:"Durable responses in a subset; PD-L1 expression, TMB and MSI-H enrich for response. CRISPR PD-1 knockout T cells show enhanced persistence in engineered-cell trials.",
+ cav:"Immune-related adverse events; hyperprogression in a minority; PD-L1 IHC is an imperfect biomarker. In vitro tumour-only assays cannot model this target — co-culture or syngeneic models are essential.",
+ t:1,cl:"Approved",ev:["KEYNOTE and CheckMate programmes","First-in-human CRISPR PD-1 knockout T-cell trials"]},
+
+{s:"CD274",n:"CD274 molecule (PD-L1)",e:29126,g:"ENSG00000120217",
+ p:"Immune checkpoint signalling",pid:"hsa05235",pdb:"KEGG",
+ d:"NSCLC / urothelial carcinoma",a:"Oncology",r:"Ligand expressed by tumour and myeloid cells to engage PD-1",
+ dir:"knockdown",mod:["blocking antibody (atezolizumab, durvalumab)","CRISPR-KO in tumour models","siRNA"],
+ pos:"Ligand on the tumour side of the synapse",
+ eff:"Prevents engagement of PD-1 at source",
+ res:"Tumour-intrinsic CD274 knockout increases T-cell killing in co-culture and slows growth in immunocompetent but not nude mice — the definitive control pair.",
+ cav:"9p24.1 amplification and IFN-γ-driven adaptive expression both raise PD-L1 for different reasons; IHC assays and cut-offs are not interchangeable across drugs.",
+ t:1,cl:"Approved",ev:["IMpower and PACIFIC programmes","IFN-γ-induced PD-L1 regulation studies"]},
+
+{s:"CTLA4",n:"Cytotoxic T-lymphocyte associated protein 4",e:1493,g:"ENSG00000163599",
+ p:"Immune checkpoint signalling",pid:"hsa05235",pdb:"KEGG",
+ d:"Melanoma",a:"Oncology",r:"Inhibitory receptor competing with CD28 for B7 ligands during priming",
+ dir:"knockdown",mod:["blocking antibody (ipilimumab)","Treg-depleting antibody"],
+ pos:"Priming-phase checkpoint in lymph node",
+ eff:"Broadens the T-cell repertoire and depletes intratumoural Tregs",
+ res:"Long-tail survival in melanoma; combination with PD-1 blockade raises response rate substantially.",
+ cav:"Highest immune-toxicity rate of the checkpoint class; Ctla4-null mice die of lymphoproliferation, which frames the on-target risk.",
+ t:1,cl:"Approved",ev:["CheckMate 067","Ctla4 knockout mouse lethal lymphoproliferation"]},
+
+{s:"CD19",n:"CD19 molecule",e:930,g:"ENSG00000177455",
+ p:"B-cell receptor signalling / lineage antigen",pid:"hsa04662",pdb:"KEGG",
+ d:"B-cell acute lymphoblastic leukaemia",a:"Oncology",r:"Pan-B-lineage surface antigen used as a targeting address rather than a driver",
+ dir:"knockdown",mod:["CAR-T","bispecific T-cell engager (blinatumomab)","ADC"],
+ pos:"Surface antigen",eff:"Redirects cytotoxic T cells to the B-cell lineage",
+ res:"High complete-remission rates in relapsed/refractory paediatric B-ALL; durable cures in a subset.",
+ cav:"Antigen escape by CD19 exon-2 splice variants or lineage switch; B-cell aplasia and cytokine release syndrome are on-target.",
+ t:1,cl:"Approved",ev:["ELIANA, ZUMA-1 trials","CD19 antigen-loss relapse reports"]},
+
+{s:"TNFRSF17",n:"TNF receptor superfamily member 17 (BCMA)",e:608,g:"ENSG00000048462",
+ p:"Plasma-cell survival signalling",pid:"hsa04060",pdb:"KEGG",
+ d:"Multiple myeloma",a:"Oncology",r:"Plasma-cell-restricted receptor for BAFF/APRIL",
+ dir:"knockdown",mod:["CAR-T","bispecific engager (teclistamab)","ADC"],
+ pos:"Surface receptor",eff:"Targeting address plus removal of an APRIL survival signal",
+ res:"Deep responses in heavily pretreated myeloma.",
+ cav:"Soluble BCMA shed by γ-secretase acts as a decoy — γ-secretase inhibition is being tested to raise surface density; antigen loss occurs.",
+ t:1,cl:"Approved",ev:["CARTITUDE-1, KarMMa, MajesTEC-1"]},
+
+{s:"CD38",n:"CD38 molecule",e:952,g:"ENSG00000004468",
+ p:"NAD metabolism / plasma-cell antigen",pid:"hsa00760",pdb:"KEGG",
+ d:"Multiple myeloma",a:"Oncology",r:"Highly expressed ectoenzyme on plasma cells",
+ dir:"knockdown",mod:["antibody (daratumumab, isatuximab)"],
+ pos:"Surface ectoenzyme",eff:"ADCC/CDC-mediated killing plus immunomodulation",
+ res:"Major survival benefit across myeloma lines of therapy.",
+ cav:"Interferes with blood-bank cross-matching (anti-CD38 binds red cells); CD38 loss under pressure.",
+ t:1,cl:"Approved",ev:["CASTOR, POLLUX, MAIA trials"]},
+
+{s:"FOLH1",n:"Folate hydrolase 1 (PSMA)",e:2346,g:"ENSG00000086205",
+ p:"Folate metabolism / prostate lineage antigen",pid:"hsa00790",pdb:"KEGG",
+ d:"Metastatic castration-resistant prostate cancer",a:"Oncology",r:"Surface antigen upregulated with AR pathway inhibition",
+ dir:"knockdown",mod:["radioligand (¹⁷⁷Lu-PSMA-617)","PET imaging ligand","bispecific engager"],
+ pos:"Surface enzyme used for delivery",
+ eff:"Delivers radiation payload rather than blocking a pathway",
+ res:"Overall-survival benefit in PSMA-PET-positive mCRPC; PET selection is mandatory.",
+ cav:"Salivary and lacrimal gland uptake causes xerostomia; PSMA-negative lesions are not treated, so pair PSMA-PET with FDG-PET.",
+ t:1,cl:"Approved",ev:["VISION trial","PSMA-PET imaging literature"]},
+
+/* ---------- ONCOLOGY · epigenetics, Wnt, Notch, Hedgehog, hypoxia ---------- */
+{s:"EZH2",n:"Enhancer of zeste 2 polycomb repressive complex 2 subunit",e:2146,g:"ENSG00000106462",
+ p:"Polycomb repressive complex 2 / H3K27 methylation",pid:"R-HSA-212300",pdb:"Reactome",
+ d:"Follicular lymphoma",a:"Oncology",r:"Gain-of-function Y646 mutations increase H3K27me3 and block germinal-centre exit",
+ dir:"knockdown",mod:["catalytic inhibitor (tazemetostat)","degrader","siRNA"],
+ pos:"Chromatin writer",
+ eff:"Lowers H3K27me3 and reactivates silenced differentiation genes",
+ res:"Higher response rate in EZH2-mutant than wild-type follicular lymphoma; H3K27me3 western blot is the pharmacodynamic readout. Also synthetic lethal with SMARCB1 loss in rhabdoid tumours.",
+ cav:"Slow, chromatin-remodelling kinetics — do not judge at 72 h; secondary T-cell malignancies reported.",
+ t:1,cl:"Approved",ev:["EZH2 gain-of-function lymphoma reports","Tazemetostat registrational studies","SMARCB1-loss synthetic lethality"]},
+
+{s:"CTNNB1",n:"Catenin beta 1",e:1499,g:"ENSG00000168036",
+ p:"Wnt/β-catenin signalling",pid:"hsa04310",pdb:"KEGG",
+ d:"Hepatocellular carcinoma",a:"Oncology",r:"Activating exon-3 mutations stabilise β-catenin; associated with immune-excluded tumours",
+ dir:"knockdown",mod:["siRNA","ASO","CRISPRi","tankyrase inhibition (indirect)"],
+ pos:"Transcriptional co-activator, downstream of the destruction complex",
+ eff:"Removes TCF/LEF-driven transcription of AXIN2, LGR5, MYC",
+ res:"Reduced AXIN2/GLUL expression, growth suppression; restores T-cell infiltration in immune-excluded models and resensitises to checkpoint blockade.",
+ cav:"Wnt is essential for intestinal crypt and haematopoietic stem cells — systemic inhibition causes gut toxicity. APC-mutant tumours are not corrected by upstream Wnt-ligand blockade because the lesion is downstream of the receptor.",
+ t:3,cl:"Preclinical/early clinical",ev:["CTNNB1 mutation and immune exclusion in HCC","AXIN2 as a Wnt target-gene readout"]},
+
+{s:"APC",n:"APC regulator of WNT signaling pathway",e:324,g:"ENSG00000134982",
+ p:"Wnt/β-catenin signalling",pid:"hsa04310",pdb:"KEGG",
+ d:"Colorectal cancer / familial adenomatous polyposis",a:"Oncology",r:"Tumour suppressor; destruction-complex scaffold lost in ~80% of sporadic CRC",
+ dir:"overexpress",mod:["restoration (experimental)","downstream β-catenin or tankyrase targeting"],
+ pos:"Destruction complex (negative regulator)",
+ eff:"Restoration reassembles the destruction complex and lowers nuclear β-catenin",
+ res:"Apc restoration in mouse models causes rapid tumour differentiation and regression — evidence that Wnt addiction persists after initiation.",
+ cav:"Restoration is not clinically deliverable; APC loss means upstream inhibitors (porcupine, FZD antibodies) will not work.",
+ t:3,cl:"No restoration therapy",ev:["Apc-restorable mouse model regression studies","TCGA COADREAD mutation frequency"]},
+
+{s:"SMO",n:"Smoothened, frizzled class receptor",e:6608,g:"ENSG00000128602",
+ p:"Hedgehog signalling",pid:"hsa04340",pdb:"KEGG",
+ d:"Basal cell carcinoma",a:"Oncology",r:"Transducer downstream of PTCH1 loss; constitutively active when PTCH1 is inactivated",
+ dir:"knockdown",mod:["antagonist (vismodegib, sonidegib)","siRNA"],
+ pos:"GPCR-like transducer at the primary cilium",
+ eff:"Blocks GLI1/GLI2 activation",
+ res:"Objective responses in locally advanced and metastatic BCC; GLI1 mRNA is the pharmacodynamic readout.",
+ cav:"SMO D473H resistance mutations and downstream GLI amplification bypass the drug; muscle cramps, alopecia and dysgeusia limit adherence; teratogenic.",
+ t:1,cl:"Approved",ev:["ERIVANCE BCC","SMO resistance-mutation case reports"]},
+
+{s:"NOTCH1",n:"Notch receptor 1",e:4851,g:"ENSG00000148400",
+ p:"Notch signalling",pid:"hsa04330",pdb:"KEGG",
+ d:"T-cell acute lymphoblastic leukaemia",a:"Oncology",r:"Activating mutations in >50% of T-ALL drive MYC and the leukaemic programme",
+ dir:"knockdown",mod:["γ-secretase inhibitor","antibody","siRNA"],
+ pos:"Cleavage-activated transcriptional receptor",
+ eff:"Prevents release of the intracellular domain and NICD-driven transcription",
+ res:"Reduced HES1/MYC expression and growth arrest in NOTCH1-mutant T-ALL lines.",
+ cav:"Severe secretory-goblet-cell metaplasia and diarrhoea from intestinal Notch inhibition; NOTCH1 is a tumour suppressor in squamous epithelium — direction of effect is tissue-dependent, so context must be specified.",
+ t:3,cl:"Clinical trials limited by gut toxicity",
+ ev:["NOTCH1 mutation landscape in T-ALL","GSI intestinal toxicity studies"]},
+
+{s:"VHL",n:"Von Hippel-Lindau tumour suppressor",e:7428,g:"ENSG00000134086",
+ p:"Hypoxia / HIF signalling",pid:"hsa04066",pdb:"KEGG",
+ d:"Clear cell renal cell carcinoma",a:"Oncology",r:"E3 ligase substrate recognition component; biallelic loss in ~90% of ccRCC stabilises HIF2α",
+ dir:"overexpress",mod:["model building / restoration (experimental)"],
+ pos:"Oxygen-sensing degradation machinery",
+ eff:"Loss is the initiating lesion; restoration reverses pseudohypoxia",
+ res:"VHL re-expression in 786-O cells suppresses HIF target genes and xenograft growth — the classic isogenic system for this pathway.",
+ cav:"Therapeutically you target the consequence (HIF2α), not VHL itself.",
+ t:1,cl:"Defines the drug-sensitive genotype",ev:["786-O VHL-restoration isogenic system","TCGA KIRC VHL loss frequency"]},
+
+{s:"EPAS1",n:"Endothelial PAS domain protein 1 (HIF2α)",e:2034,g:"ENSG00000116016",
+ p:"Hypoxia / HIF signalling",pid:"hsa04066",pdb:"KEGG",
+ d:"Clear cell renal cell carcinoma",a:"Oncology",r:"Transcription factor stabilised by VHL loss; drives VEGFA, CCND1, SLC2A1",
+ dir:"knockdown",mod:["allosteric HIF2α inhibitor (belzutifan)","siRNA","CRISPR-KO"],
+ pos:"Terminal transcription factor of the hypoxia axis",
+ eff:"Blocks HIF2α–ARNT dimerisation, removing the transcriptional output of VHL loss",
+ res:"Reduced VEGFA and EPO; tumour responses in ccRCC and in VHL-disease-associated haemangioblastoma and pancreatic NET.",
+ cav:"Anaemia and hypoxia are on-target (EPO suppression); HIF1α does not substitute in ccRCC but does in other tissues — isoform specificity matters.",
+ t:1,cl:"Approved",ev:["LITESPARK-004/005","HIF2α dimerisation-pocket structural studies"]},
+
+{s:"HIF1A",n:"Hypoxia inducible factor 1 subunit alpha",e:3091,g:"ENSG00000100644",
+ p:"Hypoxia / HIF signalling",pid:"hsa04066",pdb:"KEGG",
+ d:"Solid tumours (hypoxic core)",a:"Oncology",r:"Master regulator of glycolytic switch, angiogenesis and metastasis under hypoxia",
+ dir:"knockdown",mod:["ASO","siRNA","CRISPR-KO","indirect via mTOR inhibition"],
+ pos:"Oxygen-labile transcription factor",
+ eff:"Suppresses SLC2A1, LDHA, VEGFA and CA9 induction",
+ res:"Reduced glycolytic flux and angiogenesis in hypoxic tumour models; radiosensitisation.",
+ cav:"HIF1A is required for normal immune-cell and cardiac stress responses; hypoxia in culture must be genuine (1% O₂ or CoCl₂ mimetic with appropriate controls).",
+ t:3,cl:"Preclinical/early clinical",ev:["CA9 and SLC2A1 as canonical HIF1A target readouts","Hif1a conditional knockout phenotypes"]},
+
+{s:"VEGFA",n:"Vascular endothelial growth factor A",e:7422,g:"ENSG00000112715",
+ p:"VEGF / angiogenesis signalling",pid:"hsa04370",pdb:"KEGG",
+ d:"Colorectal cancer",a:"Oncology",r:"Secreted ligand driving tumour angiogenesis, downstream of HIF",
+ dir:"knockdown",mod:["ligand-trapping antibody (bevacizumab)","aflibercept trap","siRNA"],
+ pos:"Secreted ligand",eff:"Starves the tumour vasculature and normalises vessels",
+ res:"Modest PFS/OS gains with chemotherapy; microvessel density and perfusion imaging are the readouts.",
+ cav:"Hypertension, proteinuria, impaired wound healing and bowel perforation are on-target class effects; no validated predictive biomarker exists.",
+ t:1,cl:"Approved",ev:["AVF2107 and subsequent CRC trials"]},
+
+{s:"KDR",n:"Kinase insert domain receptor (VEGFR2)",e:3791,g:"ENSG00000128052",
+ p:"VEGF / angiogenesis signalling",pid:"hsa04370",pdb:"KEGG",
+ d:"Hepatocellular carcinoma / renal cell carcinoma",a:"Oncology",r:"Principal VEGF receptor on endothelium",
+ dir:"knockdown",mod:["multikinase TKI (sunitinib, lenvatinib, cabozantinib)","ramucirumab antibody","siRNA"],
+ pos:"Endothelial receptor kinase",
+ eff:"Blocks endothelial proliferation and survival signalling",
+ res:"Tumour responses driven largely by stromal, not tumour-cell, effects — in vitro tumour-cell assays will underestimate efficacy.",
+ cav:"Multikinase agents hit KIT, RET, MET and PDGFR too; attribution of effect requires selective tools.",
+ t:1,cl:"Approved",ev:["REFLECT, CheckMate 9ER","Endothelial-specific Kdr knockout mouse models"]},
+
+{s:"IDH1",n:"Isocitrate dehydrogenase (NADP(+)) 1",e:3417,g:"ENSG00000138413",
+ p:"TCA cycle / 2-hydroxyglutarate oncometabolite",pid:"hsa00020",pdb:"KEGG",
+ d:"Acute myeloid leukaemia / low-grade glioma",a:"Oncology",r:"Neomorphic R132 mutation converts α-ketoglutarate to D-2-hydroxyglutarate, blocking TET2 and KDM demethylases",
+ dir:"knockdown",mod:["mutant-selective inhibitor (ivosidenib, vorasidenib)","siRNA"],
+ pos:"Metabolic enzyme upstream of epigenetic regulators",
+ eff:"Lowers 2-HG and relieves the block on differentiation",
+ res:"Plasma/tumour 2-HG falls; blasts differentiate rather than die; vorasidenib delays progression in IDH-mutant low-grade glioma.",
+ cav:"Differentiation syndrome is a serious on-target effect in AML; responses are slow (weeks to months), so early timepoints will look like failure. Wild-type IDH1 inhibition gives no benefit.",
+ t:1,cl:"Approved",ev:["AGILE, INDIGO trials","2-HG oncometabolite discovery literature"]},
+
+{s:"TERT",n:"Telomerase reverse transcriptase",e:7015,g:"ENSG00000164362",
+ p:"Telomere maintenance",pid:"R-HSA-157579",pdb:"Reactome",
+ d:"Glioblastoma / melanoma / bladder cancer",a:"Oncology",r:"Promoter mutations (C228T/C250T) create ETS binding sites and reactivate telomerase",
+ dir:"knockdown",mod:["oligonucleotide (imetelstat)","siRNA","CRISPRi at promoter"],
+ pos:"Replicative-immortality effector",
+ eff:"Telomere attrition over many divisions",
+ res:"Delayed-onset crisis and senescence — the phenotype requires long time-courses (weeks), unlike most perturbations.",
+ cav:"Lag phase makes short assays uninformative; haematological toxicity; ALT-positive tumours are intrinsically resistant.",
+ t:2,cl:"Imetelstat approved in lower-risk MDS; solid-tumour use investigational",
+ ev:["TERT promoter mutation discovery (2013)","ALT pathway as resistance route"]},
+];
+</script><script>
+const DB2 = [
+/* ---------- NEUROSCIENCE ---------- */
+{s:"APP",n:"Amyloid beta precursor protein",e:351,g:"ENSG00000142192",
+ p:"Amyloid-β production and clearance",pid:"hsa05010",pdb:"KEGG",
+ d:"Alzheimer's disease",a:"Neurology",r:"Substrate whose amyloidogenic cleavage generates Aβ40/42; duplication and APP mutations cause autosomal-dominant AD, while the A673T variant is protective",
+ dir:"knockdown",mod:["ASO","siRNA","CRISPR base editing","β-secretase inhibition (indirect)"],
+ pos:"Substrate at the top of the amyloid cascade",
+ eff:"Lowers total Aβ production at source rather than clearing deposited plaque",
+ res:"Dose-dependent CSF Aβ reduction in preclinical models; APP-lowering ASOs reduce plaque burden in transgenic mice.",
+ cav:"APP has normal synaptic and trophic functions; the protective A673T variant argues for partial, not complete, lowering. Most transgenic mouse models overexpress mutant APP and translate poorly — knock-in models are preferred.",
+ t:3,cl:"Preclinical/early clinical",
+ ev:["A673T protective variant (Icelandic population study, 2012)","Autosomal-dominant APP mutations and Down syndrome triplication","Aβ-lowering ASO rodent studies"]},
+
+{s:"BACE1",n:"Beta-secretase 1",e:23621,g:"ENSG00000186318",
+ p:"Amyloid-β production and clearance",pid:"hsa05010",pdb:"KEGG",
+ d:"Alzheimer's disease",a:"Neurology",r:"Rate-limiting protease for amyloidogenic APP cleavage",
+ dir:"knockdown",mod:["small-molecule inhibitor","siRNA","CRISPR-KO"],
+ pos:"Rate-limiting enzyme of the cascade",
+ eff:"Blocks Aβ generation upstream",
+ res:"Robust, dose-dependent CSF Aβ lowering in humans — pharmacology worked. Cognition did not improve, and several phase 3 trials showed cognitive worsening.",
+ cav:"A cautionary case: target engagement is not efficacy. BACE1 cleaves other substrates (NRG1, SEZ6) required for synaptic function; timing (prevention vs symptomatic disease) may matter more than potency. Read this before proposing any new BACE1 programme.",
+ t:1,cl:"Multiple phase 3 failures (verubecestat, lanabecestat, atabecestat)",
+ ev:["EPOCH and APECS trial results","BACE1 substrate repertoire studies"]},
+
+{s:"PSEN1",n:"Presenilin 1",e:5663,g:"ENSG00000080815",
+ p:"Amyloid-β production and clearance",pid:"hsa05010",pdb:"KEGG",
+ d:"Early-onset familial Alzheimer's disease",a:"Neurology",r:"Catalytic subunit of γ-secretase; >300 pathogenic mutations shift Aβ42:Aβ40 ratio",
+ dir:"modulate",mod:["γ-secretase modulator (not inhibitor)","base editing of specific alleles"],
+ pos:"γ-secretase catalytic core",
+ eff:"Modulators shift cleavage towards shorter, less aggregation-prone peptides without blocking the enzyme",
+ res:"Modulation lowers Aβ42 while sparing Notch processing in preclinical models.",
+ cav:"Full γ-secretase inhibition failed clinically and worsened outcomes because Notch processing is blocked — semagacestat is the canonical example. Modulation and inhibition are different perturbations and must not be conflated.",
+ t:3,cl:"Modulators in early clinical development",
+ ev:["Semagacestat phase 3 worsening","Notch-sparing γ-secretase modulator literature","DIAN cohort PSEN1 carrier studies"]},
+
+{s:"MAPT",n:"Microtubule associated protein tau",e:4137,g:"ENSG00000186868",
+ p:"Tau aggregation and microtubule dynamics",pid:"hsa05010",pdb:"KEGG",
+ d:"Alzheimer's disease / frontotemporal dementia",a:"Neurology",r:"Aggregating protein whose spread correlates with cognitive decline far better than amyloid burden; MAPT mutations cause FTD",
+ dir:"knockdown",mod:["intrathecal ASO","siRNA","anti-tau antibody","splice modulation of 4R/3R ratio"],
+ pos:"Downstream effector of neurodegeneration",
+ eff:"Lowers total tau available to seed and propagate",
+ res:"Tau ASOs reduce CSF total tau and phospho-tau in humans and reverse deposition in mouse models; tau PET is the imaging readout.",
+ cav:"Mouse Mapt knockout is well tolerated, but long-term human tau lowering is unproven; antibody approaches against extracellular tau have so far failed, suggesting intracellular seeds matter more.",
+ t:2,cl:"Phase 1/2 ASO programmes",
+ ev:["Braak staging correlating tau spread with cognition","Tau ASO CSF biomarker data","MAPT mutations in FTDP-17"]},
+
+{s:"APOE",n:"Apolipoprotein E",e:348,g:"ENSG00000130203",
+ p:"Lipid transport and amyloid clearance in CNS",pid:"hsa04979",pdb:"KEGG",
+ d:"Alzheimer's disease",a:"Neurology",r:"Strongest common genetic risk factor: ε4 increases risk (~3× heterozygous, ~12× homozygous), ε2 is protective",
+ dir:"modulate",mod:["ASO isoform-selective lowering","gene therapy delivering ε2","structure correctors","antibody"],
+ pos:"Lipid carrier influencing Aβ clearance and microglial state",
+ eff:"Converting ε4 towards ε2-like behaviour rather than simple knockdown",
+ res:"APOE4 lowering reduces tau-driven neurodegeneration in mouse models; APOE2 gene delivery is in early clinical testing.",
+ cav:"Direction of benefit is isoform- and pathology-stage-dependent; APOE is needed for normal lipid handling. ε4 carriers have far higher ARIA risk with anti-amyloid antibodies — always stratify by genotype.",
+ t:3,cl:"Early clinical",
+ ev:["APOE ε4 association across GWAS and clinical cohorts","APOE4 ASO tauopathy mouse studies","ARIA risk stratification in lecanemab/donanemab trials"]},
+
+{s:"TREM2",n:"Triggering receptor expressed on myeloid cells 2",e:54209,g:"ENSG00000095970",
+ p:"Microglial activation / neuroinflammation",pid:"hsa04620",pdb:"KEGG",
+ d:"Alzheimer's disease",a:"Neurology",r:"Microglial receptor; R47H loss-of-function variant raises AD risk ~2–3×",
+ dir:"activate",mod:["agonist antibody","overexpression","small-molecule"],
+ pos:"Microglial sensing receptor upstream of the disease-associated microglia programme",
+ eff:"Agonism, not blockade — rare among neuro targets",
+ res:"TREM2 agonist antibodies increase microglial proliferation and plaque compaction in mouse models; soluble TREM2 in CSF is the engagement biomarker.",
+ cav:"Microglial activation is double-edged; timing relative to plaque deposition changes whether it helps or harms. Human genetics point to loss-of-function as risk, which is why agonism (not antagonism) is the rational direction.",
+ t:2,cl:"Phase 2",
+ ev:["R47H risk variant (2013 NEJM reports)","Trem2 knockout plaque phenotypes","Agonist antibody sTREM2 pharmacodynamics"]},
+
+{s:"SNCA",n:"Synuclein alpha",e:6622,g:"ENSG00000145335",
+ p:"α-Synuclein aggregation and proteostasis",pid:"hsa05012",pdb:"KEGG",
+ d:"Parkinson's disease",a:"Neurology",r:"Aggregating protein forming Lewy bodies; locus multiplication causes dose-dependent familial PD",
+ dir:"knockdown",mod:["ASO","siRNA","AAV-shRNA","aggregation inhibitor","antibody"],
+ pos:"Central aggregating effector",
+ eff:"Lowers the substrate available for templated misfolding",
+ res:"Gene-dosage genetics make lowering the rational direction; knockdown reduces pathology in preclinical seeding models. Seed-amplification assays (RT-QuIC) on CSF are the modern readout.",
+ cav:"Anti-α-synuclein antibodies (prasinezumab, cinpanemab) failed their primary endpoints — extracellular targeting may be insufficient. Complete knockdown impairs synaptic vesicle function.",
+ t:3,cl:"Antibody phase 2 failures; ASO programmes ongoing",
+ ev:["SNCA triplication families with dose-dependent onset","PASADENA and SPARK trial results","RT-QuIC seed amplification validation"]},
+
+{s:"LRRK2",n:"Leucine rich repeat kinase 2",e:120892,g:"ENSG00000188906",
+ p:"Lysosomal trafficking / Rab phosphorylation",pid:"hsa05012",pdb:"KEGG",
+ d:"Parkinson's disease",a:"Neurology",r:"G2019S gain-of-kinase-function is the most common known genetic cause; pathway also active in idiopathic PD",
+ dir:"knockdown",mod:["kinase inhibitor","ASO","siRNA"],
+ pos:"Kinase regulating Rab10/Rab8 and lysosomal function",
+ eff:"Reduces pRab10, restoring lysosomal and ciliary function",
+ res:"pRab10 in peripheral blood cells is a usable human pharmacodynamic marker; inhibitors reduce it dose-dependently.",
+ cav:"Lung type II pneumocyte lamellar-body changes seen in rodents and non-human primates with high-dose inhibition — monitor pulmonary readouts; effects appear reversible. Benefit in idiopathic PD is unproven.",
+ t:2,cl:"Phase 2/3",
+ ev:["G2019S penetrance studies","pRab10 pharmacodynamic assay development","Non-human primate lung safety studies"]},
+
+{s:"GBA1",n:"Glucosylceramidase beta 1",e:2629,g:"ENSG00000177628",
+ p:"Lysosomal sphingolipid catabolism",pid:"hsa00600",pdb:"KEGG",
+ d:"Parkinson's disease / Gaucher disease",a:"Neurology",r:"Heterozygous loss-of-function is the most common genetic risk factor for PD; biallelic loss causes Gaucher disease",
+ dir:"overexpress",mod:["AAV gene therapy","pharmacological chaperone (ambroxol)","substrate reduction (venglustat)"],
+ pos:"Lysosomal enzyme upstream of α-synuclein clearance",
+ eff:"Restoring GCase activity improves lysosomal degradation of α-synuclein",
+ res:"Chaperones raise brain GCase activity and lower glucosylsphingosine; the direction of perturbation is up, not down — a useful contrast with most neuro targets.",
+ cav:"Substrate-reduction therapy (venglustat) failed in GBA1-PD despite good target engagement; enzyme activity alone may not be the limiting step.",
+ t:2,cl:"Phase 2 (mixed results)",
+ ev:["GBA1 heterozygosity–PD association meta-analyses","MOVES-PD trial outcome","Ambroxol CSF GCase activity studies"]},
+
+{s:"PRKN",n:"Parkin RBR E3 ubiquitin protein ligase",e:5071,g:"ENSG00000185345",
+ p:"PINK1/Parkin mitophagy",pid:"hsa04137",pdb:"KEGG",
+ d:"Early-onset Parkinson's disease",a:"Neurology",r:"Recessive loss-of-function causes juvenile parkinsonism; impaired clearance of damaged mitochondria",
+ dir:"activate",mod:["allosteric activator","overexpression","PINK1 activator (indirect)"],
+ pos:"E3 ligase in the mitochondrial quality-control loop",
+ eff:"Restores ubiquitination of outer-membrane proteins and mitophagic flux",
+ res:"Mitophagy reporters (mt-Keima, mito-QC) show restored flux; neuroprotection in toxin models.",
+ cav:"Prkn-knockout mice have a weak phenotype, so rodent models under-report the human disease; activation chemistry is difficult.",
+ t:3,cl:"Preclinical",ev:["PRKN/PINK1 recessive parkinsonism genetics","Mitophagy flux reporter assays"]},
+
+{s:"SOD1",n:"Superoxide dismutase 1",e:6647,g:"ENSG00000142168",
+ p:"Oxidative stress / protein misfolding in motor neurons",pid:"hsa05014",pdb:"KEGG",
+ d:"Amyotrophic lateral sclerosis (SOD1-ALS)",a:"Neurology",r:"Toxic gain-of-function misfolding; ~2% of ALS",
+ dir:"knockdown",mod:["intrathecal ASO (tofersen)","AAV-microRNA","siRNA"],
+ pos:"Misfolded toxic protein",
+ eff:"Lowers the toxic species rather than correcting a lost function",
+ res:"Tofersen lowers CSF SOD1 protein and plasma neurofilament light; clinical benefit emerged on delayed-start analysis rather than the primary endpoint.",
+ cav:"The primary endpoint was not met at 28 weeks — the case illustrates why biomarker-supported accelerated approval and long follow-up matter in slow neurodegeneration. Only applies to SOD1-mutation carriers.",
+ t:1,cl:"Approved (accelerated, tofersen)",
+ ev:["VALOR trial and open-label extension","NfL as a pharmacodynamic/prognostic biomarker","ATLAS presymptomatic trial design"]},
+
+{s:"C9orf72",n:"C9orf72–SMCR8 complex subunit",e:203228,g:"ENSG00000147894",
+ p:"Repeat-expansion RNA toxicity and autophagy",pid:"hsa05014",pdb:"KEGG",
+ d:"ALS / frontotemporal dementia",a:"Neurology",r:"GGGGCC hexanucleotide expansion — most common genetic cause of both ALS and FTD",
+ dir:"knockdown",mod:["ASO targeting repeat-containing transcripts","CRISPR excision"],
+ pos:"Repeat RNA and dipeptide-repeat protein source",
+ eff:"Degrades repeat-containing transcripts while sparing the normal protein where possible",
+ res:"Poly(GP) dipeptide in CSF is a direct target-engagement biomarker and falls with treatment.",
+ cav:"A phase 3 ASO programme (jacifusen-era C9 programmes) did not show clinical benefit despite poly(GP) lowering; loss of normal C9orf72 function may also contribute, so indiscriminate knockdown could be counterproductive.",
+ t:2,cl:"Phase 1–3, no approval",
+ ev:["Hexanucleotide expansion discovery (2011)","Poly(GP) CSF biomarker studies"]},
+
+{s:"FUS",n:"FUS RNA binding protein",e:2521,g:"ENSG00000089280",
+ p:"RNA-binding protein proteostasis",pid:"hsa05014",pdb:"KEGG",
+ d:"Juvenile ALS (FUS-mutant)",a:"Neurology",r:"Mutations cause cytoplasmic mislocalisation and aggregation; aggressive early-onset disease",
+ dir:"knockdown",mod:["intrathecal ASO"],
+ pos:"Aggregating RNA-binding protein",eff:"Lowers total FUS",
+ res:"The n-of-1 to small-cohort ASO programme (ulefnersen/jacifusen) is a landmark example of individualised ASO development for ultra-rare variants.",
+ cav:"Extremely small populations make conventional trial design impossible; regulatory pathways for n-of-1 ASOs are still being defined.",
+ t:2,cl:"Expanded access / small trials",
+ ev:["FUS-ALS case-series ASO reports","N-of-1 ASO regulatory framework discussions"]},
+
+{s:"TARDBP",n:"TAR DNA binding protein (TDP-43)",e:23435,g:"ENSG00000120948",
+ p:"RNA splicing / cryptic exon repression",pid:"hsa05014",pdb:"KEGG",
+ d:"ALS / frontotemporal lobar degeneration",a:"Neurology",r:"Nuclear clearance and cytoplasmic aggregation occur in ~97% of ALS regardless of genotype",
+ dir:"modulate",mod:["cryptic-exon-blocking ASO (e.g. at STMN2/UNC13A)","chaperone approaches"],
+ pos:"Splicing repressor whose loss de-represses cryptic exons",
+ eff:"Rather than targeting TDP-43 itself, restore its downstream function by blocking specific cryptic exons",
+ res:"STMN2 cryptic-exon-blocking ASOs restore full-length STMN2 in human neurons — an elegant route around an undruggable aggregating protein.",
+ cav:"TDP-43 autoregulates its own mRNA, so both knockdown and overexpression are toxic; the therapeutic window is narrow. This is why downstream correction is preferred.",
+ t:3,cl:"Preclinical/early clinical",
+ ev:["STMN2 and UNC13A cryptic exon discoveries (2019–2022)","TDP-43 autoregulation studies"]},
+
+{s:"HTT",n:"Huntingtin",e:3064,g:"ENSG00000197386",
+ p:"Polyglutamine toxicity / somatic repeat instability",pid:"hsa05016",pdb:"KEGG",
+ d:"Huntington's disease",a:"Neurology",r:"CAG expansion causes toxic gain-of-function; CAG length inversely predicts age of onset",
+ dir:"knockdown",mod:["intrathecal ASO","allele-selective ASO","AAV-miRNA","splice-modulating small molecule","zinc-finger repressor"],
+ pos:"Toxic expanded protein",
+ eff:"Lowers mutant huntingtin; allele-selective approaches spare the wild-type protein",
+ res:"Non-selective ASO lowered CSF mutant HTT but the phase 3 trial (tominersen) was halted for harm in the high-dose arm; allele-selective and lower-dose approaches are now favoured.",
+ cav:"A key lesson: lowering the disease protein is not automatically beneficial if the wild-type protein is also lowered. Wild-type HTT is required for neuronal health. Somatic CAG expansion in striatal neurons (modified by MSH3/FAN1) may be a better target than the protein.",
+ t:2,cl:"Phase 3 halted; re-designed programmes ongoing",
+ ev:["GENERATION HD1 outcome","GWAS of HD onset modifiers implicating DNA mismatch-repair genes","CSF mutant HTT assay development"]},
+
+{s:"SMN2",n:"Survival of motor neuron 2, centromeric",e:6607,g:"ENSG00000205571",
+ p:"Pre-mRNA splicing / motor neuron survival",pid:"hsa03040",pdb:"KEGG",
+ d:"Spinal muscular atrophy",a:"Neurology",r:"Paralogue of SMN1 that mostly skips exon 7; copy number determines disease severity",
+ dir:"upregulate",mod:["splice-switching ASO (nusinersen)","oral splice modifier (risdiplam)","SMN1 gene replacement (onasemnogene)"],
+ pos:"Splicing of a compensatory paralogue",
+ eff:"Promotes exon-7 inclusion so SMN2 produces full-length functional protein — an upregulating perturbation",
+ res:"Transformative motor outcomes, especially when treated presymptomatically through newborn screening. One of the clearest demonstrations that increasing a gene's functional output can be therapeutic.",
+ cav:"Benefit depends strongly on how early treatment starts; established motor-neuron loss is not reversed. Intrathecal delivery burden for ASO; AAV immunogenicity and hepatotoxicity for gene therapy.",
+ t:1,cl:"Approved (three modalities)",
+ ev:["ENDEAR, CHERISH, FIREFISH, SUNFISH, STR1VE trials","SMN2 copy number–phenotype correlation","NURTURE presymptomatic cohort"]},
+
+{s:"SCN1A",n:"Sodium voltage-gated channel alpha subunit 1",e:6323,g:"ENSG00000144285",
+ p:"Neuronal excitability / GABAergic interneuron function",pid:"hsa04728",pdb:"KEGG",
+ d:"Dravet syndrome",a:"Neurology",r:"Haploinsufficiency reduces Nav1.1 in inhibitory interneurons, causing disinhibition and seizures",
+ dir:"upregulate",mod:["TANGO splice-modulating ASO","AAV-based transcriptional activation"],
+ pos:"Ion channel in inhibitory interneurons",
+ eff:"Raises productive SCN1A mRNA from the healthy allele — upregulation, not blockade",
+ res:"TANGO ASOs increase Nav1.1 and reduce seizures and sudden death in Dravet mouse models.",
+ cav:"Sodium-channel-blocking antiseizure drugs worsen Dravet — knowing the direction of the defect changes clinical management. Overshooting expression risks hyperexcitability.",
+ t:2,cl:"Phase 1/2",
+ ev:["SCN1A haploinsufficiency in Dravet","TANGO ASO preclinical seizure and survival data"]},
+
+{s:"PRNP",n:"Prion protein",e:5621,g:"ENSG00000171867",
+ p:"Prion propagation",pid:"hsa05020",pdb:"KEGG",
+ d:"Prion disease (CJD, fatal familial insomnia)",a:"Neurology",r:"Substrate required for prion templating; without PrP there is no disease",
+ dir:"knockdown",mod:["ASO","AAV-CRISPR base editing","zinc-finger repressor"],
+ pos:"Obligate substrate of propagation",
+ eff:"Removing the substrate halts templated conversion regardless of strain",
+ res:"PrP-lowering ASOs extend survival substantially in prion-infected mice, with benefit even after symptom onset.",
+ cav:"Humans with heterozygous PRNP loss-of-function appear healthy, supporting safety of partial lowering; complete knockout causes peripheral demyelination in some models. Rapid disease course makes trial design difficult.",
+ t:2,cl:"Phase 1/2",
+ ev:["PrP-lowering ASO survival studies in prion-infected mice","Human PRNP loss-of-function variant tolerance (gnomAD analyses)"]},
+
+{s:"ATXN2",n:"Ataxin 2",e:6311,g:"ENSG00000204842",
+ p:"Stress granule dynamics / TDP-43 modification",pid:"R-HSA-9711123",pdb:"Reactome",
+ d:"ALS",a:"Neurology",r:"Intermediate-length CAG repeats modify ALS risk; lowering suppresses TDP-43 toxicity",
+ dir:"knockdown",mod:["ASO","siRNA"],
+ pos:"Modifier of TDP-43 stress-granule biology",
+ eff:"Indirectly reduces TDP-43 toxicity without targeting TDP-43 itself",
+ res:"Ataxin-2 ASO markedly extended survival in TDP-43 transgenic mice — strong preclinical rationale.",
+ cav:"The clinical ASO programme was discontinued for lack of efficacy. Compelling mouse rescue did not translate; a reference case when weighing preclinical effect size.",
+ t:3,cl:"Clinical programme discontinued",
+ ev:["Ataxin-2 lowering rescue in TDP-43 mice (2017 Nature)","ATXN2 intermediate repeat association with ALS"]},
+
+/* ---------- CARDIOMETABOLIC ---------- */
+{s:"PCSK9",n:"Proprotein convertase subtilisin/kexin type 9",e:255738,g:"ENSG00000169174",
+ p:"LDL receptor recycling / cholesterol homeostasis",pid:"hsa04979",pdb:"KEGG",
+ d:"Atherosclerotic cardiovascular disease / hypercholesterolaemia",a:"Cardiometabolic",
+ r:"Secreted protein that targets LDLR for lysosomal degradation; gain-of-function causes familial hypercholesterolaemia, loss-of-function is protective",
+ dir:"knockdown",mod:["monoclonal antibody (evolocumab, alirocumab)","siRNA (inclisiran)","base editing (VERVE-101 class)","oral macrocycle"],
+ pos:"Negative regulator of LDL receptor density",
+ eff:"Increases hepatic LDLR surface density, raising LDL clearance",
+ res:"50–60% LDL-C reduction on top of statins; ~15% relative reduction in major cardiovascular events. siRNA gives twice-yearly dosing.",
+ cav:"A textbook human-genetics-first target: nonsense carriers with lifelong low LDL are healthy, which de-risked the programme before any trial. Effect is muted in homozygous FH with no residual LDLR function — check the LDLR genotype first.",
+ t:1,cl:"Approved (antibody and siRNA); in vivo base editing in phase 1",
+ ev:["PCSK9 loss-of-function carriers in ARIC cohort (2006)","FOURIER, ODYSSEY OUTCOMES, ORION-9/10/11","VERVE-101 phase 1 base-editing data"]},
+
+{s:"LDLR",n:"Low density lipoprotein receptor",e:3949,g:"ENSG00000130164",
+ p:"LDL receptor recycling / cholesterol homeostasis",pid:"hsa04979",pdb:"KEGG",
+ d:"Familial hypercholesterolaemia",a:"Cardiometabolic",r:"Loss-of-function causes FH; the receptor that clears circulating LDL",
+ dir:"overexpress",mod:["indirect upregulation via statins or PCSK9 inhibition","gene therapy","mRNA"],
+ pos:"Clearance receptor",
+ eff:"Every major lipid-lowering drug class ultimately works by raising functional LDLR density",
+ res:"Restoring LDLR lowers plasma LDL-C proportionally; LDLR-null homozygotes are refractory to LDLR-dependent drugs, which is why ANGPTL3 or lomitapide is used instead.",
+ cav:"Understanding that the pathway converges on LDLR explains which patients will and will not respond — a good illustration of why pathway position matters more than target novelty.",
+ t:1,cl:"Indirectly targeted by approved drugs",
+ ev:["Brown & Goldstein LDL receptor pathway work","HoFH treatment guidelines","ClinVar LDLR variant classifications"]},
+
+{s:"ANGPTL3",n:"Angiopoietin like 3",e:27329,g:"ENSG00000132855",
+ p:"Lipoprotein lipase regulation / triglyceride metabolism",pid:"hsa03320",pdb:"KEGG",
+ d:"Homozygous familial hypercholesterolaemia / severe hypertriglyceridaemia",a:"Cardiometabolic",
+ r:"Inhibitor of lipoprotein lipase and endothelial lipase; loss-of-function causes familial combined hypolipidaemia",
+ dir:"knockdown",mod:["antibody (evinacumab)","ASO","siRNA","in vivo base editing"],
+ pos:"Negative regulator of lipolysis, acting independently of LDLR",
+ eff:"Lowers LDL-C through an LDLR-independent route",
+ res:"~47% LDL-C reduction in homozygous FH, including in patients with no LDLR function — the key differentiator from statins and PCSK9 inhibitors.",
+ cav:"Very high cost and IV administration for the antibody; hepatic steatosis was a theoretical concern that has not materialised in carriers.",
+ t:1,cl:"Approved (evinacumab)",
+ ev:["ANGPTL3 loss-of-function carrier studies","ELIPSE HoFH trial"]},
+
+{s:"APOC3",n:"Apolipoprotein C3",e:345,g:"ENSG00000110245",
+ p:"Triglyceride-rich lipoprotein metabolism",pid:"hsa03320",pdb:"KEGG",
+ d:"Familial chylomicronaemia syndrome / severe hypertriglyceridaemia",a:"Cardiometabolic",
+ r:"Inhibits lipoprotein lipase and hepatic clearance; loss-of-function variants lower triglycerides and coronary risk",
+ dir:"knockdown",mod:["ASO (olezarsen)","siRNA (plozasiran)"],
+ pos:"Negative regulator of triglyceride clearance",
+ eff:"Restores LPL-mediated and LPL-independent triglyceride clearance",
+ res:"Large triglyceride reductions and fewer acute pancreatitis events in FCS.",
+ cav:"Earlier-generation unconjugated ASO (volanesorsen) caused thrombocytopenia; GalNAc conjugation improved the safety profile — a formulation, not target, problem.",
+ t:1,cl:"Approved/registrational",
+ ev:["APOC3 loss-of-function exome studies (2014 NEJM)","Balance and Essence trial programmes"]},
+
+{s:"LPA",n:"Lipoprotein(a)",e:4018,g:"ENSG00000198670",
+ p:"Lipoprotein(a) metabolism / atherothrombosis",pid:"hsa04979",pdb:"KEGG",
+ d:"Elevated Lp(a) and atherosclerotic cardiovascular disease",a:"Cardiometabolic",
+ r:"Genetically determined, largely diet- and statin-unresponsive causal risk factor for ASCVD and aortic stenosis",
+ dir:"knockdown",mod:["ASO (pelacarsen)","siRNA (olpasiran, lepodisiran)","oral small molecule"],
+ pos:"Hepatic apolipoprotein(a) synthesis",
+ eff:"Reduces plasma Lp(a) by 80–100%",
+ res:"Profound Lp(a) lowering achieved; cardiovascular outcome trials are the pending question.",
+ cav:"Lowering a causal biomarker does not guarantee event reduction — this is currently the most important open question in lipidology. Standard lipid panels do not measure Lp(a); it requires a specific assay, ideally in nmol/L.",
+ t:2,cl:"Phase 3 outcome trials ongoing (Lp(a)HORIZON, OCEAN(a))",
+ ev:["Mendelian randomisation supporting causality","Phase 2 Lp(a)-lowering data"]},
+
+{s:"HMGCR",n:"3-hydroxy-3-methylglutaryl-CoA reductase",e:3156,g:"ENSG00000113161",
+ p:"Cholesterol biosynthesis (mevalonate pathway)",pid:"hsa00900",pdb:"KEGG",
+ d:"Atherosclerotic cardiovascular disease",a:"Cardiometabolic",r:"Rate-limiting enzyme of cholesterol synthesis",
+ dir:"knockdown",mod:["statin","siRNA","CRISPR-KO"],
+ pos:"Rate-limiting biosynthetic enzyme",
+ eff:"Depletes hepatic cholesterol, activating SREBP2 and upregulating LDLR",
+ res:"The clinical benefit comes from the compensatory LDLR upregulation, not from reduced synthesis per se — an important mechanistic subtlety.",
+ cav:"Statins also raise PCSK9, which partially offsets the LDLR gain and explains the synergy with PCSK9 inhibitors. Myopathy relates to depletion of downstream isoprenoids, not cholesterol.",
+ t:1,cl:"Approved",ev:["4S, CTT meta-analyses","SREBP2 feedback regulation literature"]},
+
+{s:"GLP1R",n:"Glucagon like peptide 1 receptor",e:2740,g:"ENSG00000112164",
+ p:"Incretin signalling",pid:"hsa04080",pdb:"KEGG",
+ d:"Type 2 diabetes / obesity",a:"Cardiometabolic",r:"GPCR mediating glucose-dependent insulin secretion, satiety and gastric slowing",
+ dir:"activate",mod:["peptide agonist (semaglutide, tirzepatide is dual GIP/GLP-1)","oral small-molecule agonist"],
+ pos:"Receptor — agonism rather than blockade",
+ eff:"Amplifies an endogenous signalling axis",
+ res:"15–20%+ body-weight reduction with the most effective agents, HbA1c reduction, and cardiovascular and renal outcome benefits.",
+ cav:"Gastrointestinal tolerability, muscle-mass loss, and weight regain on discontinuation. Rodent thyroid C-cell tumour signal did not translate to humans but remains a labelled caution.",
+ t:1,cl:"Approved",ev:["SUSTAIN-6, STEP, SURMOUNT, SELECT trials"]},
+
+{s:"SLC5A2",n:"Solute carrier family 5 member 2 (SGLT2)",e:6524,g:"ENSG00000140675",
+ p:"Renal glucose reabsorption",pid:"hsa04973",pdb:"KEGG",
+ d:"Type 2 diabetes / heart failure / chronic kidney disease",a:"Cardiometabolic",
+ r:"Proximal tubule transporter responsible for ~90% of filtered glucose reabsorption",
+ dir:"knockdown",mod:["small-molecule inhibitor (empagliflozin, dapagliflozin)"],
+ pos:"Renal transporter",eff:"Induces glycosuria and natriuresis, restoring tubuloglomerular feedback",
+ res:"Cardiovascular and renal benefits that exceed what glucose lowering alone would predict, and are present in non-diabetic heart failure and CKD — evidence the mechanism is haemodynamic and metabolic, not glycaemic.",
+ cav:"Euglycaemic diabetic ketoacidosis and genital mycotic infections; benefit in heart failure is independent of diabetes status, so do not restrict the model to diabetic systems.",
+ t:1,cl:"Approved",ev:["EMPA-REG OUTCOME, DAPA-HF, EMPEROR, DAPA-CKD"]},
+
+{s:"PPARG",n:"Peroxisome proliferator activated receptor gamma",e:5468,g:"ENSG00000132170",
+ p:"Adipogenesis and insulin sensitisation",pid:"hsa03320",pdb:"KEGG",
+ d:"Type 2 diabetes / familial partial lipodystrophy",a:"Cardiometabolic",
+ r:"Master adipogenic transcription factor; P12A common variant affects diabetes risk; dominant-negative mutations cause lipodystrophy",
+ dir:"activate",mod:["thiazolidinedione agonist","selective modulator"],
+ pos:"Nuclear receptor transcription factor",
+ eff:"Drives adipocyte differentiation and lipid partitioning away from liver and muscle",
+ res:"Durable insulin sensitisation, the strongest of any oral agent, with reduction in hepatic fat.",
+ cav:"Weight gain, fluid retention, heart-failure risk and bone loss have narrowed clinical use; agonist and modulator effects differ substantially.",
+ t:1,cl:"Approved (restricted use)",ev:["PROactive trial","PPARG dominant-negative lipodystrophy families"]},
+
+{s:"PNPLA3",n:"Patatin like phospholipase domain containing 3",e:80339,g:"ENSG00000100344",
+ p:"Hepatic lipid droplet remodelling",pid:"hsa00561",pdb:"KEGG",
+ d:"Metabolic dysfunction-associated steatohepatitis (MASH)",a:"Cardiometabolic",
+ r:"I148M variant is the strongest common genetic risk factor for steatosis, steatohepatitis, fibrosis and HCC",
+ dir:"knockdown",mod:["siRNA","ASO","allele-selective silencing"],
+ pos:"Lipid droplet-associated hydrolase",
+ eff:"Silencing the I148M protein relieves the block on lipid droplet turnover",
+ res:"Allele-specific silencing reduces hepatic fat and fibrosis in humanised preclinical models; early clinical data show hepatic fat reduction in I148M carriers.",
+ cav:"The variant acts through protein accumulation on droplets, so lowering (not restoring activity) is the rational direction; benefit is expected to be genotype-restricted.",
+ t:2,cl:"Phase 1/2",ev:["PNPLA3 I148M GWAS (2008) and replication","Allele-specific ASO preclinical data"]},
+
+{s:"HSD17B13",n:"Hydroxysteroid 17-beta dehydrogenase 13",e:345275,g:"ENSG00000170509",
+ p:"Hepatic lipid droplet metabolism",pid:"hsa00140",pdb:"KEGG",
+ d:"MASH / alcohol-related liver disease",a:"Cardiometabolic",
+ r:"Protective loss-of-function variant (rs72613567) reduces progression from steatosis to steatohepatitis and cirrhosis",
+ dir:"knockdown",mod:["siRNA","ASO","CRISPR"],
+ pos:"Lipid droplet enzyme",eff:"Phenocopies a naturally protective human knockout",
+ res:"Human-genetics-validated direction: carriers of the truncating variant have lower ALT and less fibrosis. Clinical silencing trials are testing whether this is recapitulated pharmacologically.",
+ cav:"A phase 2 ASO readout was disappointing on fibrosis endpoints — protection against incident disease over decades may not equal treatment of established fibrosis. Consider this when arguing from protective variants.",
+ t:2,cl:"Phase 2",ev:["Protective splice variant exome studies (2018 NEJM)","ARO-HSD and ASO phase 1/2 results"]},
+
+{s:"MYH7",n:"Myosin heavy chain 7 (β-cardiac myosin)",e:4625,g:"ENSG00000092054",
+ p:"Sarcomere contractility",pid:"hsa05410",pdb:"KEGG",
+ d:"Hypertrophic cardiomyopathy",a:"Cardiometabolic",
+ r:"Most common HCM gene; missense mutations cause hypercontractility and excess myosin heads in the active state",
+ dir:"knockdown",mod:["allosteric myosin inhibitor (mavacamten, aficamten)","allele-specific silencing"],
+ pos:"Sarcomeric motor protein",
+ eff:"Reduces the fraction of myosin heads available for actin binding, lowering contractility toward normal",
+ res:"Reduced LV outflow gradient, improved peak VO₂ and symptom class; the first therapy addressing the mechanical cause of HCM rather than its symptoms.",
+ cav:"Over-inhibition causes systolic dysfunction — echocardiographic LVEF monitoring is mandatory and built into the prescribing programme. CYP2C19 metaboliser status alters exposure.",
+ t:1,cl:"Approved (mavacamten)",
+ ev:["EXPLORER-HCM, VALOR-HCM, SEQUOIA-HCM","Myosin super-relaxed state biophysics"]},
+
+{s:"MYBPC3",n:"Myosin binding protein C3",e:4607,g:"ENSG00000134571",
+ p:"Sarcomere contractility",pid:"hsa05410",pdb:"KEGG",
+ d:"Hypertrophic cardiomyopathy",a:"Cardiometabolic",r:"Truncating variants cause haploinsufficiency — the most common HCM genotype",
+ dir:"overexpress",mod:["AAV gene therapy","gene editing"],
+ pos:"Sarcomeric brake protein",
+ eff:"Restoring protein level corrects haploinsufficiency rather than blocking a toxic function",
+ res:"AAV-delivered MYBPC3 restores protein and prevents hypertrophy in mouse models; clinical gene therapy is in early trials.",
+ cav:"Direction differs from MYH7: MYBPC3 disease is loss-of-function, MYH7 disease is gain-of-function. Using the same perturbation for both would be a mechanistic error.",
+ t:2,cl:"Phase 1",ev:["MYBPC3 truncating variant haploinsufficiency studies","AAV MYBPC3 preclinical rescue"]},
+
+{s:"PLN",n:"Phospholamban",e:5350,g:"ENSG00000198523",
+ p:"Calcium handling / SERCA2a regulation",pid:"hsa04260",pdb:"KEGG",
+ d:"Dilated cardiomyopathy (PLN R14del)",a:"Cardiometabolic",
+ r:"Inhibitor of SERCA2a; R14del causes aggregation and arrhythmogenic cardiomyopathy",
+ dir:"knockdown",mod:["allele-specific ASO/siRNA","CRISPR excision"],
+ pos:"Negative regulator of calcium reuptake",
+ eff:"Relieves SERCA2a inhibition and removes the aggregating mutant protein",
+ res:"Allele-specific silencing improves calcium handling and contractility in patient-derived cardiomyocytes and mouse models.",
+ cav:"Complete PLN loss in humans has been reported to cause cardiomyopathy, so allele selectivity matters; founder population (Netherlands) concentrates trial feasibility.",
+ t:3,cl:"Preclinical/early clinical",ev:["PLN R14del founder cohort natural history","iPSC-cardiomyocyte rescue studies"]},
+
+/* ---------- IMMUNOLOGY & INFLAMMATION ---------- */
+{s:"TNF",n:"Tumour necrosis factor",e:7124,g:"ENSG00000232810",
+ p:"TNF / NF-κB inflammatory signalling",pid:"hsa04668",pdb:"KEGG",
+ d:"Rheumatoid arthritis / inflammatory bowel disease",a:"Immunology",
+ r:"Apical pro-inflammatory cytokine driving synovitis and mucosal inflammation",
+ dir:"knockdown",mod:["antibody (adalimumab, infliximab)","soluble receptor trap (etanercept)","siRNA"],
+ pos:"Secreted cytokine at the top of the inflammatory cascade",
+ eff:"Prevents receptor engagement and downstream NF-κB activation",
+ res:"Marked reduction in disease activity and radiographic progression; CRP is the practical pharmacodynamic readout.",
+ cav:"Reactivation of latent tuberculosis is the defining on-target risk — screen before use. Etanercept works in RA but not Crohn's disease, showing that soluble-versus-transmembrane TNF targeting is not interchangeable. Anti-TNF worsens multiple sclerosis, a striking tissue-context reversal.",
+ t:1,cl:"Approved",
+ ev:["ATTRACT, ARMADA and successor trials","Etanercept Crohn's failure","Anti-TNF MS worsening trials"]},
+
+{s:"IL6R",n:"Interleukin 6 receptor",e:3570,g:"ENSG00000160712",
+ p:"IL-6 / JAK–STAT3 signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Rheumatoid arthritis / giant cell arteritis / cytokine release syndrome",a:"Immunology",
+ r:"Receptor for IL-6, driving acute-phase response and STAT3 activation",
+ dir:"knockdown",mod:["antibody (tocilizumab, sarilumab)","siRNA"],
+ pos:"Receptor — blocks both classic and trans-signalling",
+ eff:"Abolishes STAT3 phosphorylation downstream of IL-6",
+ res:"Rapid CRP normalisation (which then becomes uninterpretable as an infection marker), efficacy in RA, GCA and CAR-T-associated cytokine release syndrome.",
+ cav:"CRP suppression masks infection — a practical monitoring hazard. IL6R Asp358Ala variant mimics receptor blockade and is associated with lower coronary risk, which is why IL-6 pathway inhibition is being tested in atherosclerosis.",
+ t:1,cl:"Approved",
+ ev:["Mendelian randomisation of IL6R Asp358Ala and coronary disease","GiACTA trial","CRS management guidelines"]},
+
+{s:"IL17A",n:"Interleukin 17A",e:3605,g:"ENSG00000112115",
+ p:"Th17 differentiation and effector function",pid:"hsa04659",pdb:"KEGG",
+ d:"Psoriasis / psoriatic arthritis / axial spondyloarthritis",a:"Immunology",
+ r:"Effector cytokine driving keratinocyte proliferation and neutrophil recruitment",
+ dir:"knockdown",mod:["antibody (secukinumab, ixekizumab)","IL-17RA antibody (brodalumab)"],
+ pos:"Terminal effector cytokine",
+ eff:"Blocks the final common effector of the Th17 axis",
+ res:"PASI-90/100 responses in a majority of psoriasis patients — among the highest efficacy of any biologic class in dermatology.",
+ cav:"Worsens inflammatory bowel disease — IL-17 is protective at the gut barrier. This is the clearest example in the dataset of the same pathway being pathogenic in one tissue and protective in another, so disease context must be part of any target call. Candida infections increase.",
+ t:1,cl:"Approved",
+ ev:["UNCOVER and ERASURE programmes","Secukinumab Crohn's disease trial worsening","IL-17 mucosal barrier biology"]},
+
+{s:"IL23A",n:"Interleukin 23 subunit alpha (p19)",e:51561,g:"ENSG00000110944",
+ p:"Th17 differentiation and effector function",pid:"hsa04659",pdb:"KEGG",
+ d:"Psoriasis / Crohn's disease",a:"Immunology",
+ r:"Cytokine that maintains pathogenic Th17 cells; IL23R protective variants validated the axis genetically",
+ dir:"knockdown",mod:["p19-selective antibody (risankizumab, guselkumab)","p40 antibody (ustekinumab)"],
+ pos:"Upstream of IL-17 production",
+ eff:"Removes the survival signal for pathogenic Th17 cells rather than the effector cytokine",
+ res:"High skin clearance rates with long dosing intervals, and unlike IL-17 blockade, efficacy in Crohn's disease — direct evidence that targeting upstream versus downstream in the same pathway produces different disease-context outcomes.",
+ cav:"p40 targeting also blocks IL-12/Th1; p19-selective agents separate these. Slow onset relative to IL-17 blockade.",
+ t:1,cl:"Approved",
+ ev:["IL23R protective variants from IBD GWAS (2006)","ADVANCE/MOTIVATE Crohn's trials","UltIMMa psoriasis trials"]},
+
+{s:"TYK2",n:"Tyrosine kinase 2",e:7297,g:"ENSG00000105397",
+ p:"IL-23 / type I interferon signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Psoriasis / systemic lupus erythematosus",a:"Immunology",
+ r:"JAK-family kinase transducing IL-23, IL-12 and type I IFN signals; P1104A loss-of-function variant protects against autoimmunity",
+ dir:"knockdown",mod:["allosteric pseudokinase-domain inhibitor (deucravacitinib)","siRNA"],
+ pos:"Receptor-associated kinase",
+ eff:"Selectively blocks a subset of JAK-dependent cytokines while sparing JAK1/2-dependent signalling",
+ res:"Oral efficacy in psoriasis without the class boxed warnings applied to JAK1/2 inhibitors — a consequence of allosteric, isoform-selective binding.",
+ cav:"Allosteric binding at the pseudokinase domain, not the ATP site, is what delivers selectivity; ATP-site TYK2 inhibitors do not behave the same way. P1104A homozygotes have increased mycobacterial susceptibility, defining the on-target infection risk.",
+ t:1,cl:"Approved",
+ ev:["POETYK PSO-1/2","TYK2 P1104A protective and mycobacterial-susceptibility genetics"]},
+
+{s:"JAK1",n:"Janus kinase 1",e:3716,g:"ENSG00000162434",
+ p:"JAK–STAT signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Atopic dermatitis / rheumatoid arthritis",a:"Immunology",
+ r:"Shared kinase for IL-4, IL-13, IL-6, IL-22 and IFN receptors",
+ dir:"knockdown",mod:["selective inhibitor (upadacitinib, abrocitinib)","siRNA"],
+ pos:"Receptor-associated kinase, a convergence point for many cytokines",
+ eff:"Broad simultaneous cytokine blockade from a single oral agent",
+ res:"Very rapid itch and lesion improvement in atopic dermatitis, often faster than biologics.",
+ cav:"Class boxed warnings for thrombosis, major adverse cardiac events, malignancy and herpes zoster derive from the ORAL Surveillance study of tofacitinib; breadth of inhibition is both the efficacy and the risk.",
+ t:1,cl:"Approved",ev:["Measure Up 1/2","JADE programme","ORAL Surveillance safety study"]},
+
+{s:"IL4R",n:"Interleukin 4 receptor",e:3566,g:"ENSG00000077238",
+ p:"Type 2 (Th2) inflammation",pid:"hsa04630",pdb:"KEGG",
+ d:"Atopic dermatitis / asthma / chronic rhinosinusitis with nasal polyps",a:"Immunology",
+ r:"Shared α-chain of IL-4 and IL-13 receptors, the hub of type 2 inflammation",
+ dir:"knockdown",mod:["antibody (dupilumab)","siRNA"],
+ pos:"Shared receptor subunit — blocks two cytokines at once",
+ eff:"Simultaneously removes IL-4 and IL-13 signalling with one agent",
+ res:"Efficacy across an unusually wide range of type 2 diseases, which is itself evidence that the shared subunit is the right node.",
+ cav:"Transient eosinophilia and conjunctivitis; targeting IL-13 alone (tralokinumab, lebrikizumab) gives a narrower but distinct profile — useful comparison when choosing node position.",
+ t:1,cl:"Approved",ev:["SOLO 1/2, LIBERTY ASTHMA QUEST, SINUS-24/52"]},
+
+{s:"TSLP",n:"Thymic stromal lymphopoietin",e:85480,g:"ENSG00000145777",
+ p:"Epithelial alarmin signalling",pid:"hsa04060",pdb:"KEGG",
+ d:"Severe asthma",a:"Immunology",r:"Epithelial-derived alarmin acting upstream of both type 2 and non-type 2 inflammation",
+ dir:"knockdown",mod:["antibody (tezepelumab)"],
+ pos:"Most upstream node in the airway inflammatory cascade",
+ eff:"Blocks initiation rather than a downstream effector arm",
+ res:"Exacerbation reduction across eosinophil strata, including low-eosinophil patients where IL-5-directed agents do not work — a direct demonstration of the value of moving upstream in a pathway.",
+ cav:"Broader upstream blockade may carry different long-term infection risk; benefit in low-T2 disease is real but smaller.",
+ t:1,cl:"Approved",ev:["NAVIGATOR, PATHWAY trials"]},
+
+{s:"IL5RA",n:"Interleukin 5 receptor subunit alpha",e:3568,g:"ENSG00000091181",
+ p:"Eosinophil differentiation and survival",pid:"hsa04060",pdb:"KEGG",
+ d:"Severe eosinophilic asthma",a:"Immunology",r:"Receptor restricted to eosinophils and basophils",
+ dir:"knockdown",mod:["afucosylated depleting antibody (benralizumab)","anti-IL-5 antibody (mepolizumab)"],
+ pos:"Lineage-restricted receptor",
+ eff:"Receptor targeting with an ADCC-enhanced antibody depletes eosinophils outright, whereas ligand neutralisation only reduces them",
+ res:"Near-complete blood eosinophil depletion with benralizumab versus partial reduction with anti-IL-5 — the same pathway, two different perturbation depths.",
+ cav:"Only effective in eosinophil-high patients; blood eosinophil count is the selection biomarker.",
+ t:1,cl:"Approved",ev:["SIROCCO, CALIMA, MENSA, DREAM trials"]},
+
+{s:"BTK",n:"Bruton tyrosine kinase",e:695,g:"ENSG00000010671",
+ p:"B-cell receptor signalling",pid:"hsa04662",pdb:"KEGG",
+ d:"Chronic lymphocytic leukaemia / mantle cell lymphoma",a:"Immunology",
+ r:"Obligate kinase downstream of the BCR; germline loss causes X-linked agammaglobulinaemia",
+ dir:"knockdown",mod:["covalent inhibitor (ibrutinib, acalabrutinib, zanubrutinib)","non-covalent (pirtobrutinib)","degrader"],
+ pos:"Proximal BCR kinase",
+ eff:"Blocks BCR-driven NF-κB survival signalling and disrupts tissue homing",
+ res:"Transient lymphocytosis as cells leave lymph nodes (expected, not progression) followed by durable disease control.",
+ cav:"Misreading the redistribution lymphocytosis as treatment failure is a classic error. C481S mutation defeats covalent inhibitors but not non-covalent ones or degraders; atrial fibrillation and bleeding relate to off-target TEC/EGFR kinase inhibition and are reduced with more selective agents.",
+ t:1,cl:"Approved",ev:["RESONATE, ELEVATE-TN, ALPINE, BRUIN","XLA genetics defining on-target immunodeficiency"]},
+
+{s:"MS4A1",n:"Membrane spanning 4-domains A1 (CD20)",e:931,g:"ENSG00000156738",
+ p:"B-cell lineage depletion",pid:"hsa04662",pdb:"KEGG",
+ d:"Multiple sclerosis / B-cell lymphoma / rheumatoid arthritis",a:"Immunology",
+ r:"B-cell surface antigen absent from stem cells and plasma cells, making depletion survivable",
+ dir:"knockdown",mod:["depleting antibody (rituximab, ocrelizumab)","bispecific engager","CAR-T"],
+ pos:"Lineage surface marker",
+ eff:"Depletes the cell type rather than modulating a signalling pathway",
+ res:"Profound reduction in MS relapses and new lesions — this reshaped understanding of MS as a B-cell-dependent disease, not purely T-cell-mediated.",
+ cav:"Hypogammaglobulinaemia and reduced vaccine responses accumulate with repeated dosing; plasma cells are spared, so existing antibody titres persist.",
+ t:1,cl:"Approved",ev:["OPERA I/II, ORATORIO","Rituximab RA and lymphoma programmes"]},
+
+{s:"S1PR1",n:"Sphingosine-1-phosphate receptor 1",e:1901,g:"ENSG00000170989",
+ p:"Lymphocyte trafficking",pid:"hsa04071",pdb:"KEGG",
+ d:"Multiple sclerosis / ulcerative colitis",a:"Immunology",
+ r:"Receptor controlling lymphocyte egress from lymph nodes",
+ dir:"knockdown",mod:["functional antagonist/modulator (fingolimod, ozanimod, siponimod)"],
+ pos:"Trafficking receptor",
+ eff:"Receptor internalisation traps lymphocytes in lymph nodes — functional antagonism achieved by an agonist",
+ res:"Reduced circulating lymphocytes and relapse rate; a good example of a drug that is chemically an agonist but functionally a blocker.",
+ cav:"First-dose bradycardia from S1PR3 activity with non-selective agents; macular oedema; rebound disease activity on abrupt withdrawal.",
+ t:1,cl:"Approved",ev:["FREEDOMS, TRANSFORMS, TRUE NORTH"]},
+
+{s:"C5",n:"Complement C5",e:727,g:"ENSG00000106804",
+ p:"Terminal complement cascade",pid:"hsa04610",pdb:"KEGG",
+ d:"Paroxysmal nocturnal haemoglobinuria / generalised myasthenia gravis",a:"Immunology",
+ r:"Terminal complement component forming the membrane attack complex",
+ dir:"knockdown",mod:["antibody (eculizumab, ravulizumab)","siRNA (cemdisiran)","peptide"],
+ pos:"Terminal cascade component",
+ eff:"Blocks MAC formation while leaving C3-mediated opsonisation intact",
+ res:"Haemolysis control and transfusion independence in PNH; rapid benefit in refractory myasthenia gravis.",
+ cav:"Neisseria meningitidis infection risk requires vaccination and often prophylactic antibiotics — a defining on-target hazard. Extravascular haemolysis from C3 deposition persists, which is why proximal C3 inhibitors were developed.",
+ t:1,cl:"Approved",ev:["PNH registration trials","REGAIN myasthenia trial","Meningococcal risk pharmacovigilance"]},
+
+{s:"C3",n:"Complement C3",e:718,g:"ENSG00000125730",
+ p:"Complement alternative pathway",pid:"hsa04610",pdb:"KEGG",
+ d:"Geographic atrophy in age-related macular degeneration",a:"Ophthalmology",
+ r:"Central complement component; local dysregulation drives retinal pigment epithelium loss",
+ dir:"knockdown",mod:["intravitreal peptide inhibitor (pegcetacoplan)","C3 siRNA"],
+ pos:"Convergence point of all three complement pathways",
+ eff:"Blocks upstream of C5, covering opsonisation as well as MAC",
+ res:"Slowed growth of geographic atrophy lesions over 24 months, without improvement in visual acuity.",
+ cav:"Increased rate of exudative conversion to wet AMD — an on-target consequence of local complement suppression. Anatomic benefit without functional benefit is a real interpretive problem for this class.",
+ t:1,cl:"Approved (pegcetacoplan)",ev:["OAKS/DERBY trials","CFH Y402H complement genetics in AMD"]},
+
+{s:"CFH",n:"Complement factor H",e:3075,g:"ENSG00000000971",
+ p:"Complement alternative pathway regulation",pid:"hsa04610",pdb:"KEGG",
+ d:"Age-related macular degeneration / atypical HUS",a:"Ophthalmology",
+ r:"Negative regulator; Y402H variant is a major AMD risk allele, loss-of-function causes aHUS",
+ dir:"overexpress",mod:["gene therapy delivering CFH or a CFH mini-protein","antibody stabilisers"],
+ pos:"Brake on the alternative pathway",
+ eff:"Restoring regulation is the mechanistically correct direction where CFH function is deficient",
+ res:"Human genetics point to insufficient regulation, so augmentation rather than blockade; retinal gene therapy approaches are in early clinical testing.",
+ cav:"Getting the direction wrong here (knocking down a negative regulator) would accelerate disease — a good teaching example.",
+ t:3,cl:"Early clinical",ev:["CFH Y402H AMD GWAS (2005, multiple independent groups)","aHUS CFH mutation series"]},
+
+{s:"NLRP3",n:"NLR family pyrin domain containing 3",e:114548,g:"ENSG00000162711",
+ p:"Inflammasome activation / IL-1β maturation",pid:"hsa04621",pdb:"KEGG",
+ d:"Cryopyrin-associated periodic syndromes / gout / atherosclerosis",a:"Immunology",
+ r:"Sensor whose gain-of-function mutations cause autoinflammatory syndromes; activated by cholesterol crystals and urate",
+ dir:"knockdown",mod:["small-molecule inhibitor (MCC950 class)","siRNA","downstream IL-1β blockade (canakinumab)"],
+ pos:"Upstream sensor of the IL-1 axis",
+ eff:"Prevents caspase-1 activation and IL-1β/IL-18 maturation",
+ res:"Downstream IL-1β blockade reduced cardiovascular events in CANTOS, providing clinical proof that inflammation is causal in atherosclerosis independent of lipids.",
+ cav:"CANTOS showed increased fatal infection, which offset part of the benefit; IL-18 is not blocked by anti-IL-1β, so upstream NLRP3 inhibition is not equivalent to canakinumab.",
+ t:2,cl:"IL-1β antibody approved; NLRP3 inhibitors in phase 2",
+ ev:["CANTOS trial","CAPS NLRP3 gain-of-function genetics","Cholesterol-crystal inflammasome activation studies"]},
+
+{s:"TNFSF13B",n:"TNF superfamily member 13b (BAFF)",e:10673,g:"ENSG00000102524",
+ p:"B-cell survival signalling",pid:"hsa04060",pdb:"KEGG",
+ d:"Systemic lupus erythematosus",a:"Immunology",r:"Survival factor for autoreactive B cells; elevated in SLE",
+ dir:"knockdown",mod:["antibody (belimumab)","receptor fusion"],
+ pos:"Secreted survival cytokine",
+ eff:"Removes the survival signal for transitional and autoreactive B cells",
+ res:"Modest but real reduction in disease activity and renal flares; effect size much smaller than B-cell depletion.",
+ cav:"Long time to benefit (months); a BAFF variant increases SLE and MS risk, supporting causality but also predicting limited effect from partial blockade.",
+ t:1,cl:"Approved",ev:["BLISS-52/76, BLISS-LN","BAFF variant association studies in Sardinian cohorts"]},
+
+{s:"IFNAR1",n:"Interferon alpha and beta receptor subunit 1",e:3454,g:"ENSG00000142166",
+ p:"Type I interferon signalling",pid:"hsa04630",pdb:"KEGG",
+ d:"Systemic lupus erythematosus",a:"Immunology",r:"Receptor for all type I interferons; the IFN signature is elevated in most SLE patients",
+ dir:"knockdown",mod:["antibody (anifrolumab)","siRNA"],
+ pos:"Shared receptor subunit — blocks all type I IFN subtypes at once",
+ eff:"Suppresses the entire interferon gene signature, which anti-IFNα antibodies did not achieve",
+ res:"Skin and joint improvement in SLE; the 21-gene IFN signature is the pharmacodynamic readout.",
+ cav:"Receptor blockade succeeded where ligand blockade failed, because there are 13 IFNα subtypes plus IFNβ — a clear argument for choosing receptor over ligand when ligand families are redundant. Herpes zoster risk increases.",
+ t:1,cl:"Approved",ev:["TULIP-1/2","Rontalizumab/sifalimumab ligand-blockade results","IFN gene signature assays"]},
+
+{s:"CCR5",n:"C-C motif chemokine receptor 5",e:1234,g:"ENSG00000160791",
+ p:"Chemokine signalling / HIV entry",pid:"hsa04062",pdb:"KEGG",
+ d:"HIV-1 infection",a:"Infectious disease",r:"Principal co-receptor for R5-tropic HIV entry; CCR5-Δ32 homozygotes are largely resistant to infection",
+ dir:"knockdown",mod:["entry inhibitor (maraviroc)","CRISPR/ZFN knockout of CD4+ cells","allogeneic Δ32/Δ32 transplant"],
+ pos:"Entry co-receptor",
+ eff:"Blocks viral entry rather than any post-entry step",
+ res:"The Berlin and London patients achieved sustained HIV remission after CCR5-Δ32/Δ32 stem-cell transplantation — proof of concept that a host-factor knockout can cure infection.",
+ cav:"Only works for R5-tropic virus; tropism testing is mandatory because X4-tropic virus uses CXCR4 and will be unaffected or selected for. CCR5 loss increases susceptibility to West Nile virus and possibly influences other infections.",
+ t:1,cl:"Approved (maraviroc); curative transplant cases reported",
+ ev:["CCR5-Δ32 resistance cohort studies","Berlin/London patient case reports","MOTIVATE trials and tropism assay requirements"]},
+
+/* ---------- RARE / GENETIC DISEASE ---------- */
+{s:"TTR",n:"Transthyretin",e:7276,g:"ENSG00000118271",
+ p:"Protein misfolding / amyloid deposition",pid:"R-HSA-977225",pdb:"Reactome",
+ d:"Hereditary and wild-type transthyretin amyloidosis",a:"Rare disease",
+ r:"Tetrameric carrier protein that dissociates and misfolds into amyloid fibrils in nerve and heart",
+ dir:"knockdown",mod:["siRNA (patisiran, vutrisiran)","ASO (inotersen, eplontersen)","tetramer stabiliser (tafamidis)","in vivo CRISPR knockout (NTLA-2001)"],
+ pos:"Circulating amyloidogenic precursor made almost entirely by the liver",
+ eff:"Either remove the precursor (silencing/editing) or prevent tetramer dissociation (stabilisation) — two valid perturbations of the same pathway with different mechanisms",
+ res:"Silencing reduces serum TTR by 80–90% and improves neuropathy scores and quality of life; a single dose of in vivo CRISPR produced durable ~90% reduction — the first demonstration of systemic in vivo gene editing in humans.",
+ cav:"TTR carries thyroxine and retinol-binding protein; vitamin A supplementation is given with silencers. Stabilisers and silencers are mechanistically different — do not pool them when assessing evidence.",
+ t:1,cl:"Approved (siRNA, ASO, stabiliser); CRISPR in phase 3",
+ ev:["APOLLO, NEURO-TTRansform, ATTR-ACT trials","NTLA-2001 first-in-human in vivo CRISPR report (2021)"]},
+
+{s:"CFTR",n:"CF transmembrane conductance regulator",e:1080,g:"ENSG00000001626",
+ p:"Epithelial chloride transport",pid:"hsa02010",pdb:"KEGG",
+ d:"Cystic fibrosis",a:"Rare disease",r:"Chloride channel; F508del causes misfolding and degradation, G551D causes a gating defect",
+ dir:"upregulate",mod:["corrector (lumacaftor, tezacaftor, elexacaftor)","potentiator (ivacaftor)","mRNA therapy","gene editing"],
+ pos:"Apical epithelial ion channel",
+ eff:"Restores folding, trafficking and gating of the mutant protein — functional restoration, not blockade",
+ res:"Triple-combination therapy raises sweat chloride toward normal and produces large, sustained FEV₁ gains across most genotypes. A landmark demonstration that mutation-class-matched small molecules can rescue a misfolded protein.",
+ cav:"Mutation class dictates which modality works: potentiators alone fail for F508del, and nonsense mutations (class I) respond to none of them and still need readthrough or genetic approaches. Always stratify by mutation class.",
+ t:1,cl:"Approved",
+ ev:["VX-445/TRIKAFTA registration trials","Sweat chloride as a validated pharmacodynamic biomarker","CFTR2 mutation database"]},
+
+{s:"HBB",n:"Haemoglobin subunit beta",e:3043,g:"ENSG00000244734",
+ p:"Haemoglobin switching / globin synthesis",pid:"hsa05143",pdb:"KEGG",
+ d:"Sickle cell disease / β-thalassaemia",a:"Rare disease",
+ r:"E6V mutation causes polymerisation of deoxygenated haemoglobin; loss causes β-thalassaemia",
+ dir:"overexpress",mod:["lentiviral β-globin gene addition (betibeglogene, lovotibeglogene)","base editing of the sickle codon"],
+ pos:"Globin gene itself",
+ eff:"Adds functional β-globin to outcompete sickle haemoglobin",
+ res:"Transfusion independence in β-thalassaemia and near-elimination of vaso-occlusive crises in sickle cell disease.",
+ cav:"Requires myeloablative conditioning with its own toxicity and fertility consequences; cost and manufacturing limit access.",
+ t:1,cl:"Approved",ev:["HGB-206/HGB-207 programmes","Long-term follow-up of lentiviral globin gene therapy"]},
+
+{s:"BCL11A",n:"BAF chromatin remodeling complex subunit BCL11A",e:53335,g:"ENSG00000119866",
+ p:"Haemoglobin switching / globin synthesis",pid:"hsa05143",pdb:"KEGG",
+ d:"Sickle cell disease / β-thalassaemia",a:"Rare disease",
+ r:"Transcriptional repressor of fetal haemoglobin; GWAS identified it as the key HbF modifier",
+ dir:"knockdown",mod:["CRISPR-Cas9 disruption of the erythroid-specific +58 enhancer (exagamglogene)","shRNA in lentiviral vector"],
+ pos:"Repressor of the fetal globin genes",
+ eff:"Knocking out a repressor de-represses HBG1/HBG2 and raises fetal haemoglobin, which blocks sickle polymerisation",
+ res:"HbF rises to 30–45% of total, effectively eliminating vaso-occlusive crises in most treated patients. This is the clearest example in the dataset of treating disease by knocking down a repressor rather than the disease gene itself.",
+ cav:"Targeting the erythroid-specific enhancer rather than the coding region is essential — whole-gene BCL11A loss causes neurodevelopmental impairment. Tissue-specific regulatory elements can convert an undruggable gene into a safe target.",
+ t:1,cl:"Approved (exa-cel)",
+ ev:["HbF-modifier GWAS identifying BCL11A","+58 erythroid enhancer dissection studies","CLIMB SCD-121 and THAL-111 trials"]},
+
+{s:"SERPINC1",n:"Serpin family C member 1 (antithrombin)",e:462,g:"ENSG00000117601",
+ p:"Coagulation cascade regulation",pid:"hsa04610",pdb:"KEGG",
+ d:"Haemophilia A and B",a:"Rare disease",r:"Natural anticoagulant; lowering it rebalances haemostasis when clotting factors are missing",
+ dir:"knockdown",mod:["siRNA (fitusiran)"],
+ pos:"Negative regulator of thrombin generation",
+ eff:"Rather than replacing the missing factor, reduce the brake — a rebalancing strategy that works for haemophilia A and B, with or without inhibitors",
+ res:"Restores thrombin generation and reduces bleeding rates with subcutaneous monthly dosing.",
+ cav:"Thrombotic events occurred with early dosing regimens and required protocol revision and antithrombin-level-guided dosing — narrow therapeutic window by design.",
+ t:1,cl:"Approved/registrational",ev:["ATLAS trial programme","Antithrombin-level-guided dosing amendments"]},
+
+{s:"F8",n:"Coagulation factor VIII",e:2157,g:"ENSG00000185010",
+ p:"Coagulation cascade",pid:"hsa04610",pdb:"KEGG",
+ d:"Haemophilia A",a:"Rare disease",r:"Missing cofactor in the intrinsic tenase complex",
+ dir:"overexpress",mod:["AAV gene therapy (valoctocogene roxaparvovec)","factor replacement","mimetic antibody (emicizumab)"],
+ pos:"Coagulation cofactor",eff:"Restores factor VIII activity or mimics its bridging function",
+ res:"AAV therapy achieves factor expression that reduces bleeding, but expression declines over years; emicizumab bridges FIXa and FX and works subcutaneously regardless of inhibitors.",
+ cav:"Anti-AAV capsid immunity excludes many patients and prevents redosing; F8 is large, requiring B-domain-deleted constructs. Declining durability is the central unresolved issue.",
+ t:1,cl:"Approved",ev:["GENEr8-1 trial and follow-up","HAVEN emicizumab programme"]},
+
+{s:"DMD",n:"Dystrophin",e:1756,g:"ENSG00000198947",
+ p:"Dystrophin-glycoprotein complex / sarcolemma integrity",pid:"hsa05410",pdb:"KEGG",
+ d:"Duchenne muscular dystrophy",a:"Rare disease",
+ r:"Largest human gene; out-of-frame deletions abolish dystrophin, in-frame deletions give milder Becker phenotype",
+ dir:"upregulate",mod:["exon-skipping ASO (eteplirsen, golodirsen, casimersen)","AAV micro-dystrophin","CRISPR exon excision"],
+ pos:"Structural protein linking cytoskeleton to extracellular matrix",
+ eff:"Restore the reading frame to convert a Duchenne genotype into a Becker-like one — partial function is far better than none",
+ res:"Exon-skipping produces measurable but low dystrophin restoration; micro-dystrophin gene therapy gives broader expression of a truncated protein.",
+ cav:"Accelerated approvals for exon-skipping rested on dystrophin levels as a surrogate, and functional benefit remains debated — a leading example of surrogate-endpoint controversy. Gene size forces micro-dystrophin constructs that lack some domains. Serious immune and cardiac events have occurred with high-dose AAV.",
+ t:2,cl:"Approved (accelerated) with contested efficacy",
+ ev:["Exon-skipping dystrophin quantification studies","EMBARK micro-dystrophin trial","Becker-phenotype reading-frame rule"]},
+
+{s:"SERPINA1",n:"Serpin family A member 1 (alpha-1 antitrypsin)",e:5265,g:"ENSG00000197249",
+ p:"Protease inhibition / hepatic proteostasis",pid:"hsa04610",pdb:"KEGG",
+ d:"Alpha-1 antitrypsin deficiency",a:"Rare disease",
+ r:"Z allele (E342K) polymerises in hepatocytes, causing liver disease by gain-of-function and lung disease by loss-of-function",
+ dir:"knockdown",mod:["siRNA (fazirsiran)","ASO","gene editing plus augmentation"],
+ pos:"Secreted protease inhibitor",
+ eff:"Silencing removes the polymerising Z protein from the liver, but does nothing for the lung, which needs augmentation",
+ res:"Fazirsiran reduced hepatic Z-AAT and improved liver histology in early trials.",
+ cav:"This is the cleanest example of one gene requiring opposite perturbations in two organs: knock down for liver, augment for lung. Any single-direction strategy addresses only half the disease.",
+ t:2,cl:"Phase 2/3 (liver); plasma augmentation approved for lung",
+ ev:["AATD-associated liver histology studies","Fazirsiran phase 2 biopsy data"]},
+
+{s:"HAO1",n:"Hydroxyacid oxidase 1 (glycolate oxidase)",e:54363,g:"ENSG00000101323",
+ p:"Glyoxylate and oxalate metabolism",pid:"hsa00630",pdb:"KEGG",
+ d:"Primary hyperoxaluria type 1",a:"Rare disease",
+ r:"Upstream enzyme producing glyoxylate, the substrate that becomes oxalate when AGXT is deficient",
+ dir:"knockdown",mod:["siRNA (lumasiran)"],
+ pos:"Upstream of the defective enzyme",
+ eff:"Substrate reduction — block the pathway above the genetic lesion so the toxic metabolite is never made",
+ res:"Large reductions in urinary and plasma oxalate; reduced stone burden and nephrocalcinosis progression.",
+ cav:"Elegant strategy, but it does not correct the underlying AGXT defect; humans with HAO1 loss-of-function appear healthy, which supported the approach. Only applies to type 1 disease.",
+ t:1,cl:"Approved",ev:["ILLUMINATE-A/B trials","HAO1 loss-of-function human tolerance"]},
+
+{s:"LDHA",n:"Lactate dehydrogenase A",e:3939,g:"ENSG00000134333",
+ p:"Glyoxylate and oxalate metabolism",pid:"hsa00630",pdb:"KEGG",
+ d:"Primary hyperoxaluria types 1, 2 and 3",a:"Rare disease",
+ r:"Converts glyoxylate to oxalate at the final step",
+ dir:"knockdown",mod:["siRNA (nedosiran)"],
+ pos:"Final enzymatic step before the toxic product",
+ eff:"Blocking the terminal step should work regardless of which upstream enzyme is defective",
+ res:"Urinary oxalate reduction in PH1; efficacy in PH2 and PH3 has been less consistent than the pathway logic predicted.",
+ cav:"A useful comparison with HAO1: blocking further downstream is theoretically broader but proved less effective in practice, and LDHA has essential roles in muscle glycolysis.",
+ t:1,cl:"Approved (PH1)",ev:["PHYOX trial programme","Comparison of substrate-reduction node positions in PH"]},
+
+{s:"ALAS1",n:"5'-aminolevulinate synthase 1",e:211,g:"ENSG00000023330",
+ p:"Haem biosynthesis",pid:"hsa00860",pdb:"KEGG",
+ d:"Acute hepatic porphyria",a:"Rare disease",
+ r:"Rate-limiting first enzyme; induced during attacks, causing accumulation of neurotoxic ALA and PBG",
+ dir:"knockdown",mod:["siRNA (givosiran)"],
+ pos:"Rate-limiting enzyme at the head of the pathway",
+ eff:"Prevents accumulation of upstream neurotoxic intermediates",
+ res:"~70% reduction in annualised attack rate; urinary ALA and PBG are direct pharmacodynamic markers.",
+ cav:"Increased homocysteine and transaminase elevations; renal function decline reported — the pathway is required for normal haem synthesis, so full suppression is not the goal.",
+ t:1,cl:"Approved",ev:["ENVISION trial","ALA/PBG urinary biomarker correlation"]},
+
+{s:"APOL1",n:"Apolipoprotein L1",e:8542,g:"ENSG00000100342",
+ p:"Podocyte injury / innate immunity",pid:"R-HSA-168256",pdb:"Reactome",
+ d:"APOL1-mediated kidney disease",a:"Nephrology",
+ r:"G1/G2 risk variants, which evolved as trypanosome resistance, cause podocyte injury in a recessive-like pattern",
+ dir:"knockdown",mod:["small-molecule channel inhibitor (inaxaplin)","siRNA","ASO"],
+ pos:"Pore-forming protein causing podocyte toxicity",
+ eff:"Blocks the cation channel activity of the risk-variant protein",
+ res:"Proteinuria reduction in two-risk-allele patients in early trials — a genetically targeted therapy for a common cause of kidney failure in people of West African ancestry.",
+ cav:"Benefit is restricted to two-risk-allele genotypes, which requires genotyping to be routine; APOL1 is absent from mice, so conventional rodent models cannot be used without humanisation.",
+ t:2,cl:"Phase 2/3",ev:["APOL1 risk-variant discovery (2010 Science)","AMPLITUDE/inaxaplin early clinical data"]},
+
+{s:"PKD1",n:"Polycystin 1, transient receptor potential channel interacting",e:5310,g:"ENSG00000008710",
+ p:"Ciliary signalling / cyst formation",pid:"R-HSA-5620924",pdb:"Reactome",
+ d:"Autosomal dominant polycystic kidney disease",a:"Nephrology",
+ r:"Mutated in ~78% of ADPKD; dosage-sensitive with second-hit somatic inactivation driving cyst formation",
+ dir:"overexpress",mod:["experimental restoration","downstream AVPR2 antagonism (tolvaptan) as the clinical route"],
+ pos:"Ciliary mechanosensor upstream of cAMP signalling",
+ eff:"Restoration is experimental; clinically the pathway is blocked downstream at the vasopressin receptor",
+ res:"Tolvaptan slows eGFR decline and total kidney volume growth — targeting the downstream consequence when the primary gene is not druggable.",
+ cav:"Illustrates the general principle of dropping downstream when the causal gene is undruggable. Tolvaptan causes aquaresis and idiosyncratic hepatotoxicity requiring monthly liver monitoring.",
+ t:1,cl:"Downstream target approved (tolvaptan)",
+ ev:["TEMPO 3:4 and REPRISE trials","PKD1 dosage and second-hit cyst models"]},
+
+{s:"RPE65",n:"Retinoid isomerohydrolase RPE65",e:6121,g:"ENSG00000116745",
+ p:"Retinoid (visual) cycle",pid:"hsa00830",pdb:"KEGG",
+ d:"Leber congenital amaurosis / retinitis pigmentosa (biallelic RPE65)",a:"Ophthalmology",
+ r:"RPE enzyme regenerating 11-cis-retinal; loss abolishes the visual cycle",
+ dir:"overexpress",mod:["subretinal AAV2 gene therapy (voretigene neparvovec)"],
+ pos:"Enzyme in the visual cycle",eff:"Restores the missing enzymatic step in surviving RPE cells",
+ res:"Improved navigation under low light (multi-luminance mobility test) — the first approved in vivo gene therapy in the United States.",
+ cav:"Requires surviving photoreceptors, so treat early; benefit may wane over years; the eye's immune privilege and small dose requirement make it a favourable but not generalisable case for AAV.",
+ t:1,cl:"Approved",ev:["Voretigene phase 3 mobility-test results","Long-term follow-up reports"]},
+
+{s:"PAH",n:"Phenylalanine hydroxylase",e:5053,g:"ENSG00000171759",
+ p:"Phenylalanine metabolism",pid:"hsa00360",pdb:"KEGG",
+ d:"Phenylketonuria",a:"Rare disease",r:"Deficiency causes phenylalanine accumulation and neurotoxicity",
+ dir:"overexpress",mod:["mRNA therapy","AAV gene therapy","enzyme substitution (pegvaliase, a bacterial PAL)","chaperone (sapropterin)"],
+ pos:"Metabolic enzyme",eff:"Restore enzymatic clearance of phenylalanine",
+ res:"Pegvaliase achieves substantial blood phenylalanine reduction using a different enzyme entirely, rather than replacing PAH — a useful reminder that restoring pathway function does not require restoring the original gene.",
+ cav:"Pegvaliase causes anaphylaxis requiring a long induction; sapropterin only works for responsive mutations, so genotype-guided.",
+ t:1,cl:"Approved (pegvaliase, sapropterin); gene/mRNA therapy in trials",
+ ev:["PRISM trials","BH4-responsiveness genotype studies"]},
+
+{s:"OTC",n:"Ornithine transcarbamylase",e:5009,g:"ENSG00000036473",
+ p:"Urea cycle",pid:"hsa00220",pdb:"KEGG",
+ d:"Ornithine transcarbamylase deficiency",a:"Rare disease",r:"X-linked urea cycle defect causing hyperammonaemia",
+ dir:"overexpress",mod:["mRNA therapy","AAV gene therapy","base editing"],
+ pos:"Mitochondrial urea cycle enzyme",eff:"Restores ureagenesis",
+ res:"Ureagenesis rate measured by stable-isotope tracer is the functional readout; early clinical gene and base-editing programmes have shown ammonia control.",
+ cav:"The 1999 OTC gene-therapy death from an innate immune response to adenoviral vector reshaped the entire field's safety framework — essential historical context for any viral-vector proposal.",
+ t:2,cl:"Phase 1/2",ev:["Stable-isotope ureagenesis assays","Historical adenoviral vector safety reviews"]},
+];
+</script><script>
+const R = DB.concat(DB2);
+
+/* ---------- helpers ---------- */
+const DIR = {
+  knockdown:{label:"Knock down / inhibit",cls:"down",verb:"loss of function"},
+  overexpress:{label:"Overexpress / restore",cls:"up",verb:"gain of function"},
+  upregulate:{label:"Upregulate output",cls:"up",verb:"gain of function"},
+  activate:{label:"Activate / agonise",cls:"up",verb:"gain of function"},
+  reactivate:{label:"Reactivate",cls:"up",verb:"gain of function"},
+  modulate:{label:"Modulate, not block",cls:"neutral",verb:"qualitative change"}
+};
+const TIER = {
+  1:"Clinically validated in this disease",
+  2:"In human trials",
+  3:"Strong preclinical and human genetic support",
+  4:"Association only"
+};
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uniq = a => [...new Set(a)].sort((x,y)=>x.localeCompare(y));
+const q = encodeURIComponent;
+
+/* Disease context strings are precise but fragmented; dx[] holds the canonical
+   disease terms a record belongs to, so the disease report groups sensibly. */
+const PAN = "Pan-cancer / solid tumours";
+const DXFULL = {
+ "pan-cancer":[PAN],"solid tumours (pan-cancer)":[PAN],"solid tumours (hypoxic core)":[PAN],
+ "solid tumours with high oxidative stress":[PAN],"mesenchymal / therapy-persistent cancer cells":[PAN],
+ "atm-deficient and replication-stressed tumours":[PAN],
+ "amyotrophic lateral sclerosis (sod1-als)":["Amyotrophic lateral sclerosis"],
+ "als":["Amyotrophic lateral sclerosis"],
+ "juvenile als (fus-mutant)":["Amyotrophic lateral sclerosis"],
+ "als / frontotemporal dementia":["Amyotrophic lateral sclerosis","Frontotemporal dementia"],
+ "als / frontotemporal lobar degeneration":["Amyotrophic lateral sclerosis","Frontotemporal dementia"],
+ "alzheimer's disease / frontotemporal dementia":["Alzheimer's disease","Frontotemporal dementia"],
+ "early-onset familial alzheimer's disease":["Alzheimer's disease"],
+ "early-onset parkinson's disease":["Parkinson's disease"],
+ "parkinson's disease / gaucher disease":["Parkinson's disease","Gaucher disease"],
+ "prion disease (cjd, fatal familial insomnia)":["Prion disease"],
+ "melanoma / nsclc":["Melanoma","Non-small cell lung cancer"],
+ "nsclc / urothelial carcinoma":["Non-small cell lung cancer","Urothelial carcinoma"],
+ "glioblastoma / melanoma / bladder cancer":["Glioblastoma","Melanoma","Urothelial carcinoma"],
+ "clear cell renal cell carcinoma":["Renal cell carcinoma"],
+ "hepatocellular carcinoma / renal cell carcinoma":["Hepatocellular carcinoma","Renal cell carcinoma"],
+ "acute myeloid leukaemia / low-grade glioma":["Acute myeloid leukaemia","Low-grade glioma"],
+ "multiple myeloma / aml":["Multiple myeloma","Acute myeloid leukaemia"],
+ "chronic lymphocytic leukaemia / mantle cell lymphoma":["Chronic lymphocytic leukaemia","Mantle cell lymphoma"],
+ "breast cancer (hr-positive)":["Breast cancer"],
+ "hr-deficient breast and ovarian cancer":["Breast cancer","Ovarian cancer"],
+ "hereditary breast and ovarian cancer":["Breast cancer","Ovarian cancer"],
+ "brca-mutant ovarian cancer":["Ovarian cancer"],
+ "prostate cancer (metastatic castration-resistant)":["Prostate cancer"],
+ "metastatic castration-resistant prostate cancer":["Prostate cancer"],
+ "microsatellite-instability-high colorectal cancer":["Colorectal cancer"],
+ "colorectal cancer / familial adenomatous polyposis":["Colorectal cancer","Familial adenomatous polyposis"],
+ "mtap-deleted tumours (glioma, mesothelioma, pancreatic)":["MTAP-deleted tumours"],
+ "myelofibrosis / polycythaemia vera":["Myelofibrosis","Polycythaemia vera"],
+ "atherosclerotic cardiovascular disease / hypercholesterolaemia":["Atherosclerotic cardiovascular disease","Hypercholesterolaemia"],
+ "elevated lp(a) and atherosclerotic cardiovascular disease":["Atherosclerotic cardiovascular disease"],
+ "familial hypercholesterolaemia":["Hypercholesterolaemia"],
+ "homozygous familial hypercholesterolaemia / severe hypertriglyceridaemia":["Hypercholesterolaemia","Hypertriglyceridaemia"],
+ "familial chylomicronaemia syndrome / severe hypertriglyceridaemia":["Familial chylomicronaemia syndrome","Hypertriglyceridaemia"],
+ "type 2 diabetes / obesity":["Type 2 diabetes","Obesity"],
+ "type 2 diabetes / heart failure / chronic kidney disease":["Type 2 diabetes","Heart failure","Chronic kidney disease"],
+ "type 2 diabetes / familial partial lipodystrophy":["Type 2 diabetes","Familial partial lipodystrophy"],
+ "metabolic dysfunction-associated steatohepatitis (mash)":["MASH (fatty liver disease)"],
+ "mash / alcohol-related liver disease":["MASH (fatty liver disease)","Alcohol-related liver disease"],
+ "dilated cardiomyopathy (pln r14del)":["Dilated cardiomyopathy"],
+ "rheumatoid arthritis / inflammatory bowel disease":["Rheumatoid arthritis","Inflammatory bowel disease"],
+ "rheumatoid arthritis / giant cell arteritis / cytokine release syndrome":["Rheumatoid arthritis","Giant cell arteritis","Cytokine release syndrome"],
+ "atopic dermatitis / rheumatoid arthritis":["Atopic dermatitis","Rheumatoid arthritis"],
+ "atopic dermatitis / asthma / chronic rhinosinusitis with nasal polyps":["Atopic dermatitis","Asthma","Chronic rhinosinusitis with nasal polyps"],
+ "severe asthma":["Asthma"],"severe eosinophilic asthma":["Asthma"],
+ "psoriasis / crohn's disease":["Psoriasis","Crohn's disease"],
+ "psoriasis / psoriatic arthritis / axial spondyloarthritis":["Psoriasis","Psoriatic arthritis","Axial spondyloarthritis"],
+ "psoriasis / systemic lupus erythematosus":["Psoriasis","Systemic lupus erythematosus"],
+ "multiple sclerosis / b-cell lymphoma / rheumatoid arthritis":["Multiple sclerosis","B-cell lymphoma","Rheumatoid arthritis"],
+ "multiple sclerosis / ulcerative colitis":["Multiple sclerosis","Ulcerative colitis"],
+ "cryopyrin-associated periodic syndromes / gout / atherosclerosis":["Cryopyrin-associated periodic syndromes","Gout","Atherosclerotic cardiovascular disease"],
+ "paroxysmal nocturnal haemoglobinuria / generalised myasthenia gravis":["Paroxysmal nocturnal haemoglobinuria","Myasthenia gravis"],
+ "age-related macular degeneration / atypical hus":["Age-related macular degeneration","Atypical haemolytic uraemic syndrome"],
+ "geographic atrophy in age-related macular degeneration":["Age-related macular degeneration"],
+ "leber congenital amaurosis / retinitis pigmentosa (biallelic rpe65)":["Leber congenital amaurosis","Retinitis pigmentosa"],
+ "sickle cell disease / β-thalassaemia":["Sickle cell disease","β-thalassaemia"],
+ "haemophilia a":["Haemophilia"],"haemophilia a and b":["Haemophilia"],
+ "hereditary and wild-type transthyretin amyloidosis":["Transthyretin amyloidosis"],
+ "primary hyperoxaluria type 1":["Primary hyperoxaluria"],
+ "primary hyperoxaluria types 1, 2 and 3":["Primary hyperoxaluria"]
+};
+R.forEach(r=>{ r.dx = DXFULL[r.d.toLowerCase()] || [r.d]; });
+
+function links(r){
+  const L = [
+    ["NCBI Gene",`https://www.ncbi.nlm.nih.gov/gene/${r.e}`],
+    ["Ensembl",`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${r.g}`],
+    ["HGNC",`https://www.genenames.org/tools/search/#!/?query=${q(r.s)}`],
+    ["UniProt",`https://www.uniprot.org/uniprotkb?query=gene:${q(r.s)}+AND+organism_id:9606`],
+    ["Open Targets",`https://platform.opentargets.org/target/${r.g}`],
+    ["DepMap",`https://depmap.org/portal/gene/${q(r.s)}?tab=overview`],
+    ["GTEx",`https://gtexportal.org/home/gene/${q(r.s)}`],
+    ["Protein Atlas",`https://www.proteinatlas.org/search/${q(r.s)}`],
+    ["STRING",`https://string-db.org/cgi-bin/network?identifiers=${q(r.s)}&species=9606`],
+    ["gnomAD",`https://gnomad.broadinstitute.org/gene/${r.g}?dataset=gnomad_r4`],
+    ["ClinVar",`https://www.ncbi.nlm.nih.gov/clinvar/?term=${q(r.s)}%5Bgene%5D`],
+    ["Pharos",`https://pharos.nih.gov/targets?q=${q(r.s)}`],
+    ["ChEMBL",`https://www.ebi.ac.uk/chembl/g/#search_results/all/query=${q(r.s)}`],
+    ["IMPC mouse",`https://www.mousephenotype.org/data/search?term=${q(r.s)}`],
+    ["BioGRID ORCS",`https://orcs.thebiogrid.org/Search/Index?searchTerm=${q(r.s)}`]
+  ];
+  L.push(r.pdb==="KEGG"
+    ? ["KEGG pathway",`https://www.kegg.jp/pathway/${r.pid}`]
+    : ["Reactome",`https://reactome.org/content/detail/${r.pid}`]);
+  L.push(["Reactome search",`https://reactome.org/content/query?q=${q(r.p)}&species=Homo+sapiens`]);
+  L.push(["GO terms",`https://www.ebi.ac.uk/QuickGO/search/${q(r.s)}`]);
+  L.push(["Monarch / MONDO",`https://monarchinitiative.org/search?q=${q(r.d)}`]);
+  L.push(["PubMed: gene + disease",`https://pubmed.ncbi.nlm.nih.gov/?term=${q(`"${r.s}"[tiab] AND "${r.d}"[tiab]`)}`]);
+  L.push(["PubMed: perturbation",`https://pubmed.ncbi.nlm.nih.gov/?term=${q(`"${r.s}" AND (knockdown OR knockout OR siRNA OR CRISPR OR inhibitor) AND "${r.d}"`)}`]);
+  L.push(["Europe PMC",`https://europepmc.org/search?query=${q(`"${r.s}" AND "${r.d}"`)}`]);
+  L.push(["ClinicalTrials.gov",`https://clinicaltrials.gov/search?term=${q(r.s)}&cond=${q(r.d)}`]);
+  L.push(["DisGeNET",`https://www.disgenet.com/search?view=GENES&idents=${q(r.s)}`]);
+  return L;
+}
+
+function tierBar(t){
+  let s='<span class="tier">';
+  for(let i=1;i<=4;i++) s += `<i class="${i<=(5-t)?'on':''}"></i>`;
+  return s+`<span>Tier ${t} · ${esc(TIER[t])}</span></span>`;
+}
+
+function recCard(r,rank){
+  const d = DIR[r.dir]||DIR.modulate;
+  return `<article class="rec">
+    <div class="rec-top">
+      ${rank?`<div class="rank">${rank}</div>`:""}
+      <div class="rec-id">
+        <h4><span class="sym">${esc(r.s)}</span> <span class="full">${esc(r.n)}</span></h4>
+        <div class="acc"><span>Entrez ${r.e}</span><span>${esc(r.g)}</span><span>${esc(r.pid)} · ${esc(r.pdb)}</span></div>
+      </div>
+      <div class="chips">
+        <span class="chip ${d.cls}">${esc(d.label)}</span>
+        <span class="chip plain">${esc(r.a)}</span>
+        ${tierBar(r.t)}
+      </div>
+    </div>
+    <div class="rec-body">
+      <dl class="kv">
+        <dt>Pathway</dt><dd>${esc(r.p)}</dd>
+        <dt>Disease context</dt><dd>${esc(r.d)}</dd>
+        <dt>Role in disease</dt><dd>${esc(r.r)}</dd>
+        <dt>Position</dt><dd>${esc(r.pos)}</dd>
+        <dt>Effect on pathway</dt><dd>${esc(r.eff)}</dd>
+        <dt>Expected result</dt><dd>${esc(r.res)}</dd>
+        <dt>Watch out for</dt><dd class="warn">${esc(r.cav)}</dd>
+        <dt>Tools</dt><dd>${r.mod.map(m=>`<span class="chip plain">${esc(m)}</span>`).join(" ")}</dd>
+        <dt>Clinical status</dt><dd>${esc(r.cl)}</dd>
+      </dl>
+      <details class="more"><summary>Evidence and linked sources</summary>
+        <ul class="ev">${r.ev.map(e=>`<li>${esc(e)}</li>`).join("")}</ul>
+        <div class="links">${links(r).map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>
+      </details>
+    </div>
+  </article>`;
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll(".panel").forEach(p=>p.hidden = p.id!=="p-"+b.dataset.p);
+  if(b.dataset.p==="map") drawMap();
+  if(b.dataset.p==="over") drawCharts();
+  window.scrollTo({top:0,behavior:"instant"});
+}));
+const tb = document.getElementById("themebtn");
+tb.addEventListener("click",()=>{
+  const cur = document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", dark?"light":"dark");
+  if(!document.getElementById("p-map").hidden) drawMap();
+  if(!document.getElementById("p-over").hidden) drawCharts();
+});
+
+/* ---------- populate selects ---------- */
+const PATHS = uniq(R.map(r=>r.p));
+const DISEASES = uniq(R.flatMap(r=>r.dx));
+const AREAS = uniq(R.map(r=>r.a));
+const fill = (el,items,first)=>{ el.innerHTML = (first?`<option value="">${first}</option>`:"") +
+  items.map(i=>`<option value="${esc(i)}">${esc(i)}</option>`).join(""); };
+
+fill(document.getElementById("qaPath"),PATHS);
+fill(document.getElementById("qaDis"),DISEASES,"Any disease context");
+fill(document.getElementById("qbDis"),DISEASES);
+fill(document.getElementById("qbArea"),AREAS,"All areas");
+fill(document.getElementById("fArea"),AREAS,"All areas");
+fill(document.getElementById("mapArea"),AREAS,"All areas");
+fill(document.getElementById("fDir"),Object.keys(DIR).map(k=>DIR[k].label),"Any direction");
+document.getElementById("cRec").textContent = R.length;
+document.getElementById("cGene").textContent = new Set(R.map(r=>r.s)).size;
+document.getElementById("cPath").textContent = PATHS.length;
+document.getElementById("cDis").textContent = DISEASES.length;
+
+/* ---------- Query A ---------- */
+function score(r){
+  let v = (5-r.t)*22;
+  if(/^Approved/i.test(r.cl)) v += 14;
+  if(/rate-limiting|obligate|narrowest|apex|convergence|Most upstream|shared/i.test(r.pos+" "+r.eff)) v += 8;
+  if(/only|single/i.test(r.pos)) v += 4;
+  return v;
+}
+function runA(){
+  const p = document.getElementById("qaPath").value;
+  const d = document.getElementById("qaDis").value;
+  const goal = document.getElementById("qaGoal").value;
+  let hits = R.filter(r=>r.p===p);
+  const exact = d ? hits.filter(r=>r.dx.includes(d)) : [];
+  let scope = "";
+  if(d && exact.length){ hits = exact; scope = `in ${d}`; }
+  else if(d){ const area = R.find(r=>r.dx.includes(d))?.a;
+    hits = hits.filter(r=>r.a===area);
+    scope = hits.length ? `in the ${area} records for this pathway — no record pairs this pathway directly with ${d}` : "";
+  } else scope = "across every disease context on record";
+  if(goal!=="any") hits = hits.filter(r=>{
+    const c = (DIR[r.dir]||DIR.modulate).cls;
+    return goal==="block" ? c!=="up" : c!=="down";
+  });
+  hits = hits.slice().sort((a,b)=>score(b)-score(a));
+  const out = document.getElementById("qaOut");
+  if(!hits.length){
+    out.innerHTML = `<div class="empty">Nothing on record for <b>${esc(p)}</b>${d?` in <b>${esc(d)}</b>`:""} in that direction. Try "Either direction", or clear the disease context to see every gene mapped to this pathway.</div>`;
+    return;
+  }
+  const top = hits[0], td = DIR[top.dir]||DIR.modulate;
+  const byDir = {};
+  hits.forEach(r=>{ const l=(DIR[r.dir]||DIR.modulate).label; (byDir[l]=byDir[l]||[]).push(r.s); });
+  const summary = Object.entries(byDir).map(([k,v])=>`${k}: ${uniq(v).join(", ")}`).join(" · ");
+  out.innerHTML = `<div class="answer-head">
+      <h3>Start with ${esc(top.s)} — ${esc(td.label.toLowerCase())}</h3>
+      <p>${esc(hits.length)} candidate${hits.length>1?"s":""} for <b>${esc(p)}</b> ${esc(scope)}, ranked by how far the perturbation has been taken and how central the gene sits in the pathway. ${esc(summary)}.</p>
+      <p style="font-size:13.5px">Direction refers to the gene, not always to the pathway: knocking down a negative regulator such as MDM2, BCL11A or PTEN raises pathway activity rather than lowering it. Each record says which.</p>
+    </div>` + hits.map((r,i)=>recCard(r,i+1)).join("");
+}
+document.getElementById("qaRun").addEventListener("click",runA);
+["qaPath","qaDis","qaGoal"].forEach(id=>document.getElementById(id).addEventListener("change",runA));
+
+/* ---------- Query B ---------- */
+function runB(){
+  const d = document.getElementById("qbDis").value;
+  const hits = R.filter(r=>r.dx.includes(d));
+  const out = document.getElementById("qbOut");
+  if(!hits.length){ out.innerHTML = `<div class="empty">No records for that disease.</div>`; return; }
+  const groups = {};
+  hits.forEach(r=>(groups[r.p]=groups[r.p]||[]).push(r));
+  const tiers = hits.map(r=>r.t);
+  const best = Math.min(...tiers);
+  const html = Object.entries(groups).sort((a,b)=>Math.min(...a[1].map(x=>x.t))-Math.min(...b[1].map(x=>x.t)))
+    .map(([p,rs])=>`<div class="pathblock">
+      <h4>${esc(p)} <span class="pid">${esc(rs[0].pid)} · ${esc(rs[0].pdb)} · ${rs.length} gene${rs.length>1?"s":""}</span></h4>
+      ${rs.sort((a,b)=>a.t-b.t).map(r=>{
+        const dd = DIR[r.dir]||DIR.modulate;
+        return `<div class="generow">
+          <div class="g">${esc(r.s)}<small>Entrez ${r.e}<br>${esc(r.g)}</small></div>
+          <div>
+            <div class="chips" style="margin-bottom:6px">
+              <span class="chip ${dd.cls}">${esc(dd.label)}</span>${tierBar(r.t)}
+            </div>
+            ${r.d!==d?`<div style="font-size:13px;color:var(--muted);margin-bottom:3px">Recorded context: ${esc(r.d)}</div>`:""}
+            <div><b>Role.</b> ${esc(r.r)}</div>
+            <div style="margin-top:4px"><b>If perturbed.</b> ${esc(r.res)}</div>
+            <div style="margin-top:4px;color:var(--warn)"><b>Caveat.</b> ${esc(r.cav)}</div>
+            <details class="more"><summary>Evidence and linked sources</summary>
+              <ul class="ev">${r.ev.map(e=>`<li>${esc(e)}</li>`).join("")}</ul>
+              <div class="links">${links(r).map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>
+            </details>
+          </div></div>`;}).join("")}
+    </div>`).join("");
+  out.innerHTML = `<div class="answer-head">
+      <h3>${esc(d)}</h3>
+      <p>${Object.keys(groups).length} pathway${Object.keys(groups).length>1?"s":""}, ${hits.length} gene record${hits.length>1?"s":""}. Strongest evidence on record: tier ${best} — ${esc(TIER[best].toLowerCase())}. Pathways are ordered by the strength of their best-supported gene.</p>
+    </div>` + html;
+}
+document.getElementById("qbRun").addEventListener("click",runB);
+document.getElementById("qbDis").addEventListener("change",runB);
+document.getElementById("qbArea").addEventListener("change",e=>{
+  const a = e.target.value;
+  fill(document.getElementById("qbDis"), a? uniq(R.filter(r=>r.a===a).flatMap(r=>r.dx)) : DISEASES);
+  runB();
+});
+
+/* ---------- Browse ---------- */
+let sortKey="s", sortDir=1;
+function currentRows(){
+  const t = document.getElementById("fText").value.toLowerCase().trim();
+  const a = document.getElementById("fArea").value;
+  const dl = document.getElementById("fDir").value;
+  const tier = +document.getElementById("fTier").value;
+  return R.filter(r=>{
+    if(a && r.a!==a) return false;
+    if(dl && (DIR[r.dir]||DIR.modulate).label!==dl) return false;
+    if(r.t>tier) return false;
+    if(!t) return true;
+    return JSON.stringify(r).toLowerCase().includes(t);
+  }).sort((x,y)=>{
+    const A=x[sortKey],B=y[sortKey];
+    return (typeof A==="number"? A-B : String(A).localeCompare(String(B)))*sortDir;
+  });
+}
+function drawTable(){
+  const rows = currentRows();
+  document.getElementById("browseCount").textContent = `${rows.length} of ${R.length} records`;
+  document.querySelector("#tbl tbody").innerHTML = rows.map(r=>{
+    const d=DIR[r.dir]||DIR.modulate;
+    return `<tr>
+      <td class="sym">${esc(r.s)}</td>
+      <td class="mono" style="font-size:12px"><a href="https://www.ncbi.nlm.nih.gov/gene/${r.e}" target="_blank" rel="noopener">${r.e}</a><br>${esc(r.g)}</td>
+      <td>${esc(r.p)}<br><span class="mono" style="font-size:11.5px;color:var(--muted)">${esc(r.pid)}</span></td>
+      <td>${esc(r.d)}</td>
+      <td><span class="chip ${d.cls}">${esc(d.label)}</span></td>
+      <td>${r.t}</td>
+      <td style="max-width:320px">${esc(r.r)}</td>
+    </tr>`;}).join("");
+}
+["fText","fArea","fDir","fTier"].forEach(id=>document.getElementById(id).addEventListener("input",drawTable));
+document.querySelectorAll("#tbl th").forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.k; sortDir = (k===sortKey)? -sortDir : 1; sortKey=k; drawTable();
+}));
+function dl(name,text,type){
+  const b=new Blob([text],{type}); const u=URL.createObjectURL(b);
+  const a=document.createElement("a"); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
+}
+const COLS=["s","n","e","g","p","pid","pdb","d","a","r","dir","pos","eff","res","cav","t","cl"];
+const HEAD=["gene_symbol","gene_name","entrez_id","ensembl_id","pathway","pathway_accession","pathway_source","disease","area","role_in_disease","perturbation_direction","position_in_pathway","effect_on_pathway","expected_result","caveats","evidence_tier","clinical_status"];
+document.getElementById("expCsv").addEventListener("click",()=>{
+  const cell=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const rows=currentRows().map(r=>COLS.map(c=>cell(r[c])).concat([cell(r.dx.join("; ")),cell(r.mod.join("; ")),cell(r.ev.join(" | "))]).join(","));
+  dl("perturbation_atlas.csv",[HEAD.concat(["disease_tags","modalities","evidence"]).join(",")].concat(rows).join("\n"),"text/csv");
+});
+document.getElementById("expJson").addEventListener("click",()=>{
+  dl("perturbation_atlas.json",JSON.stringify(currentRows(),null,2),"application/json");
+});
+
+/* ---------- Map ---------- */
+let sim=null;
+function drawMap(){
+  const svg=document.getElementById("mapsvg"), tip=document.getElementById("maptip");
+  const area=document.getElementById("mapArea").value, mode=document.getElementById("mapMode").value;
+  const recs = area? R.filter(r=>r.a===area):R;
+  const cs=getComputedStyle(document.documentElement);
+  const C={gene:cs.getPropertyValue("--down").trim(),path:cs.getPropertyValue("--up").trim(),
+           dis:cs.getPropertyValue("--neutral").trim(),rule:cs.getPropertyValue("--rule").trim(),
+           ink:cs.getPropertyValue("--ink").trim(),muted:cs.getPropertyValue("--muted").trim()};
+  const nodes=new Map(), links=[];
+  const add=(id,type,label)=>{ if(!nodes.has(id)) nodes.set(id,{id,type,label,deg:0}); return nodes.get(id); };
+  recs.forEach(r=>{
+    const gn=add("g:"+r.s,"gene",r.s);
+    if(mode!=="gd"){ const pn=add("p:"+r.p,"path",r.p); links.push([gn,pn]); gn.deg++; pn.deg++; }
+    if(mode!=="gp") r.dx.forEach(dd=>{ const dn=add("d:"+dd,"dis",dd); links.push([gn,dn]); gn.deg++; dn.deg++; });
+  });
+  const N=[...nodes.values()];
+  const W=svg.clientWidth||900, H=560;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  N.forEach((n,i)=>{ const a=i/N.length*Math.PI*2, rad=n.type==="gene"?Math.min(W,H)*0.36:Math.min(W,H)*0.2;
+    n.x=W/2+Math.cos(a)*rad+(Math.random()-.5)*30; n.y=H/2+Math.sin(a)*rad+(Math.random()-.5)*30; n.vx=0; n.vy=0; });
+  const rOf=n=>n.type==="gene"?4.5+Math.min(n.deg,6)*0.7:6+Math.min(n.deg,14)*0.75;
+  if(sim) cancelAnimationFrame(sim);
+  let tick=0;
+  function step(){
+    const k=Math.max(0.02,1-tick/260);
+    for(let i=0;i<N.length;i++)for(let j=i+1;j<N.length;j++){
+      const a=N[i],b=N[j]; let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;
+      if(d2>62500) continue;
+      const f=900/d2; const d=Math.sqrt(d2); dx/=d; dy/=d;
+      a.vx-=dx*f; a.vy-=dy*f; b.vx+=dx*f; b.vy+=dy*f;
+    }
+    links.forEach(([a,b])=>{ const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||0.01;
+      const f=(d-85)*0.012; a.vx+=dx/d*f; a.vy+=dy/d*f; b.vx-=dx/d*f; b.vy-=dy/d*f; });
+    N.forEach(n=>{ n.vx+=(W/2-n.x)*0.0016; n.vy+=(H/2-n.y)*0.0016;
+      if(n.fixed) {n.vx=0;n.vy=0;return;}
+      n.x+=n.vx*k; n.y+=n.vy*k; n.vx*=0.82; n.vy*=0.82;
+      n.x=Math.max(14,Math.min(W-14,n.x)); n.y=Math.max(14,Math.min(H-14,n.y)); });
+    paint(); tick++;
+    if(tick<300) sim=requestAnimationFrame(step);
+  }
+  function paint(){
+    const showLbl = N.length<90;
+    svg.innerHTML =
+      links.map(([a,b])=>`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${C.rule}" stroke-width="1"/>`).join("")
+      + N.map((n,i)=>{
+        const col = n.type==="gene"?C.gene:n.type==="path"?C.path:C.dis;
+        const lab = (showLbl||n.type!=="gene")&&n.deg>0
+          ? `<text x="${(n.x+rOf(n)+3).toFixed(1)}" y="${(n.y+3.5).toFixed(1)}" font-size="${n.type==="gene"?9.5:10.5}" fill="${n.type==="gene"?C.muted:C.ink}" font-family="IBM Plex Sans, sans-serif">${esc(n.label.length>34?n.label.slice(0,32)+"…":n.label)}</text>`:"";
+        return `<circle data-i="${i}" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${rOf(n).toFixed(1)}" fill="${col}" fill-opacity="${n.type==="gene"?0.9:0.75}" stroke="${col}" stroke-width="1.2"/>${lab}`;
+      }).join("");
+  }
+  svg.onpointermove = e=>{
+    const t=e.target;
+    if(t.tagName==="circle"){ const n=N[+t.dataset.i];
+      tip.style.opacity=1; tip.style.left=(e.offsetX+14)+"px"; tip.style.top=(e.offsetY+10)+"px";
+      tip.textContent = `${n.label} — ${n.type==="gene"?"gene":n.type==="path"?"pathway":"disease"}, ${n.deg} link${n.deg>1?"s":""}`;
+    } else tip.style.opacity=0;
+    if(drag){ const pt=rel(e); drag.x=pt.x; drag.y=pt.y; if(tick>=300) paint(); }
+  };
+  let drag=null;
+  const rel=e=>{const b=svg.getBoundingClientRect(); return {x:(e.clientX-b.left)/b.width*W,y:(e.clientY-b.top)/b.height*H};};
+  svg.onpointerdown = e=>{ if(e.target.tagName==="circle"){ drag=N[+e.target.dataset.i]; drag.fixed=true; svg.setPointerCapture(e.pointerId);
+    if(tick>=300){ tick=200; sim=requestAnimationFrame(step); } } };
+  svg.onpointerup = ()=>{ if(drag){ drag.fixed=false; drag=null; } };
+  step();
+}
+["mapArea","mapMode"].forEach(id=>document.getElementById(id).addEventListener("change",drawMap));
+
+/* ---------- Charts ---------- */
+function barChart(title,sub,data,colorVar){
+  const cs=getComputedStyle(document.documentElement);
+  const col=cs.getPropertyValue(colorVar).trim(), muted=cs.getPropertyValue("--muted").trim(),
+        ink=cs.getPropertyValue("--ink").trim(), rule=cs.getPropertyValue("--rule-soft").trim();
+  const max=Math.max(...data.map(d=>d[1])), rowH=24, W=520, L=190, H=data.length*rowH+8;
+  const bars=data.map((d,i)=>{
+    const w=Math.max(2,(W-L-46)*d[1]/max), y=i*rowH+4;
+    return `<text x="${L-9}" y="${y+14}" text-anchor="end" font-size="11.5" fill="${muted}" font-family="IBM Plex Sans,sans-serif">${esc(d[0].length>30?d[0].slice(0,28)+"…":d[0])}</text>
+    <rect x="${L}" y="${y+3}" width="${w}" height="13" fill="${col}" fill-opacity="0.85" rx="1.5"/>
+    <text x="${L+w+6}" y="${y+14}" font-size="11" fill="${ink}" font-family="IBM Plex Mono,monospace">${d[1]}</text>`;
+  }).join("");
+  return `<div class="card"><h4>${esc(title)}</h4><p class="sub">${esc(sub)}</p>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-height:${H}px">
+    <line x1="${L}" y1="0" x2="${L}" y2="${H}" stroke="${rule}"/>${bars}</svg></div>`;
+}
+function tally(fn){ const m={}; R.forEach(r=>{[].concat(fn(r)).forEach(k=>m[k]=(m[k]||0)+1);}); 
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
+function drawCharts(){
+  const dirData = tally(r=>(DIR[r.dir]||DIR.modulate).label);
+  const tierData = tally(r=>`Tier ${r.t} — ${TIER[r.t]}`).sort((a,b)=>a[0].localeCompare(b[0]));
+  document.getElementById("charts").innerHTML =
+    barChart("Records by therapeutic area","How the current curation is distributed.",tally(r=>r.a),"--down") +
+    barChart("Direction of perturbation","Most validated targets are knocked down, but a substantial minority need to be raised — getting this backwards is the commonest design error.",dirData,"--up") +
+    barChart("Evidence tier","Tier 1 means a drug or genetic therapy acting on this gene is approved in this disease.",tierData,"--neutral") +
+    barChart("Pathways with the most gene records","Pathways where several nodes can be targeted, so node choice matters.",tally(r=>r.p).slice(0,14),"--down") +
+    barChart("Diseases with the most gene records","Best-covered disease contexts for the disease report.",tally(r=>r.dx).slice(0,14),"--up") +
+    barChart("Most recurrent genes","Genes appearing in more than one pathway or disease context.",
+      tally(r=>r.s).filter(x=>x[1]>1),"--neutral");
+}
+
+/* ---------- Sources ---------- */
+document.getElementById("srcProse").innerHTML = `
+<h3>What this is</h3>
+<p>A hand-curated relational table of ${R.length} gene–pathway–disease records covering ${new Set(R.map(r=>r.s)).size} genes, ${PATHS.length} pathways and ${DISEASES.length} disease contexts. Each row is not just an association: it records which way to move the gene, where the gene sits in the pathway, what happens when you move it, and how the experiment usually fails. That is the part conventional association databases leave out.</p>
+
+<h3>Read this before you use it</h3>
+<div class="note">
+<p><b>Identifiers and evidence were compiled from domain knowledge, not from a live database pull.</b> This session had no web or API access, so nothing here was fetched from NCBI, Ensembl, KEGG, Reactome or PubMed at build time. Accession numbers should be treated as high-confidence but unverified: every one is a live link, so checking a row takes one click.</p>
+<p>For the same reason there are no PMIDs. Where a paper or trial matters, it is named descriptively and paired with a PubMed, Europe PMC or ClinicalTrials.gov query that will find it. Fabricated citation numbers would look more authoritative and be worth less.</p>
+<p>Nothing here is a substitute for reading the primary literature, and none of it is clinical advice.</p>
+</div>
+
+<h3>Schema</h3>
+<div class="schema">gene_symbol            HGNC-approved symbol
+gene_name              full descriptive name
+entrez_id              NCBI Gene numeric ID       -> ncbi.nlm.nih.gov/gene/{id}
+ensembl_id             ENSG stable ID             -> ensembl.org, opentargets.org
+pathway                pathway name
+pathway_accession      KEGG hsa##### or Reactome R-HSA-#####
+pathway_source         KEGG | Reactome
+disease                disease context (one row per gene x pathway x disease)
+area                   therapeutic area
+role_in_disease        driver | suppressor | effector | modifier | regulator | antigen
+perturbation_direction knockdown | overexpress | upregulate | activate | reactivate | modulate
+position_in_pathway    where the gene sits relative to the rest of the cascade
+effect_on_pathway      what the perturbation does to pathway flux
+expected_result        observed or expected phenotype, with assay readouts
+caveats                failure modes, resistance, on-target toxicity, model limitations
+evidence_tier          1 approved | 2 in trials | 3 strong preclinical | 4 association only
+clinical_status        free text
+modalities             array of tools that have been used
+evidence               array of supporting evidence statements</div>
+<p>The primary key is the triple (gene_symbol, pathway, disease). A gene appears more than once when its role or the right perturbation changes with context — KRAS in pancreatic versus lung cancer, SERPINA1 in liver versus lung, IL17A in skin versus gut.</p>
+
+<h3>Cross-references attached to every record</h3>
+<ul>
+<li><b>Gene identity:</b> NCBI Gene, Ensembl, HGNC, UniProt</li>
+<li><b>Target evidence:</b> Open Targets (genetic and drug evidence, keyed on the Ensembl ID), Pharos, ChEMBL</li>
+<li><b>Functional genomics:</b> DepMap (CRISPR essentiality and selective dependency), BioGRID ORCS (published screens)</li>
+<li><b>Expression and localisation:</b> GTEx, Human Protein Atlas</li>
+<li><b>Interactions and pathways:</b> STRING, KEGG, Reactome, QuickGO</li>
+<li><b>Variation:</b> gnomAD (constraint and loss-of-function tolerance), ClinVar</li>
+<li><b>Disease ontology:</b> Monarch / MONDO, DisGeNET</li>
+<li><b>Model organism:</b> IMPC and MGI mouse phenotypes</li>
+<li><b>Literature and trials:</b> PubMed (two pre-built queries per record: gene + disease, and gene + perturbation terms), Europe PMC, ClinicalTrials.gov</li>
+</ul>
+
+<h3>How candidates are ranked</h3>
+<p>The ranking is deliberately simple and inspectable: evidence tier dominates, an approved drug adds weight, and genes sitting at a rate-limiting, obligate or convergent point in the cascade get a small bonus because blocking there is harder to bypass. It is a starting order for reading, not a computed probability. The caveat field usually matters more than the rank.</p>
+
+<h3>Design decisions worth knowing</h3>
+<ul>
+<li><b>Direction is a property of the gene, not the pathway.</b> Knocking down MDM2 raises p53 activity. Knocking down BCL11A raises fetal haemoglobin. Knocking down PTEN activates PI3K. Records that invert like this are flagged in the effect field.</li>
+<li><b>Disease context changes the answer.</b> IL-17 blockade clears psoriasis and worsens Crohn's disease. NOTCH1 is an oncogene in T-ALL and a tumour suppressor in squamous epithelium. SERPINA1 needs silencing for the liver and augmentation for the lung. A gene–pathway pair without a disease context is not actionable.</li>
+<li><b>Failures are recorded, not hidden.</b> BACE1, tominersen, ataxin-2 lowering, semagacestat, MCL1 cardiotoxicity and the anti-α-synuclein antibodies are in here precisely because they show target engagement and clinical benefit are different things.</li>
+<li><b>Node position is part of the answer.</b> Where several genes sit in one pathway, upstream and downstream blockade behave differently — TSLP versus IL-5RA in asthma, IL-23 versus IL-17 in Crohn's, KRAS versus MEK in RAS-driven tumours.</li>
+</ul>
+
+<h3>Turning this into a living database</h3>
+<p>The exported JSON keeps the Entrez and Ensembl IDs, so it can be refreshed programmatically. A reasonable pipeline:</p>
+<ul>
+<li><b>Validate identifiers</b> against <code>mygene.info/v3/gene/{entrez}</code> or the HGNC REST service, and flag any symbol that has been retired or merged.</li>
+<li><b>Refresh pathway membership</b> from the Reactome ContentService and the KEGG REST API, then reconcile the two — they disagree on boundaries more often than people expect.</li>
+<li><b>Pull association evidence</b> from the Open Targets GraphQL API using the Ensembl ID, which returns genetic, expression, drug and literature evidence with scores.</li>
+<li><b>Pull dependency data</b> from DepMap's downloadable CRISPR gene-effect matrix to add a quantitative essentiality column and a selectivity flag per lineage.</li>
+<li><b>Anchor citations</b> by running each record's stored PubMed query through E-utilities and storing the returned PMIDs, so citations are retrieved rather than remembered.</li>
+<li><b>Map diseases to MONDO</b> using the OLS or Monarch API so disease strings become ontology IDs and can be rolled up by parent term.</li>
+</ul>
+<p>Once those six steps run on a schedule, the curated fields here — direction, position, expected result and caveats — are the part that stays hand-written, because no public database holds them.</p>
+
+<h3>Coverage and gaps</h3>
+<p>Coverage is deepest in oncology, neurodegeneration, cardiometabolic disease, immunology and rare monogenic disease, because those are where perturbation has been taken furthest in humans. Thinly covered or absent: infectious disease beyond HIV, psychiatry, most of ophthalmology, endocrine disease, and non-coding or microbiome-mediated mechanisms. Treat an empty result as a gap in this table, not as evidence of no relationship.</p>
+`;
+
+/* ---------- boot ---------- */
+document.getElementById("qaPath").value = "RAS–MAPK / ERK signalling";
+document.getElementById("qaDis").value = "Pancreatic ductal adenocarcinoma";
+runA();
+document.getElementById("qbDis").value = "Alzheimer's disease";
+runB();
+drawTable();
+</script></body></html>
